@@ -1,0 +1,126 @@
+.pf2e-weather-forge .window-content {
+  padding: 0;
+}
+
+.weather-forge-form {
+  padding: 12px;
+}
+
+.weather-forge-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(390px, 1.25fr) minmax(300px, 1fr);
+  gap: 12px;
+}
+
+.weather-panel {
+  border: 1px solid rgba(120, 120, 120, 0.35);
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 420px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.weather-panel h2 {
+  margin: 0 0 10px;
+  border-bottom: 1px solid rgba(120, 120, 120, 0.35);
+  padding-bottom: 6px;
+}
+
+.weather-headline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 1.05rem;
+}
+
+.weather-description {
+  margin: 10px 0 14px;
+  font-style: italic;
+}
+
+.weather-values {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 6px 10px;
+  margin: 0;
+}
+
+.weather-values dt {
+  font-weight: 700;
+}
+
+.weather-values dd {
+  margin: 0;
+  text-align: right;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.weather-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.empty-preview {
+  opacity: 0.72;
+  font-style: italic;
+}
+
+.weather-actions.secondary {
+  margin-top: 8px;
+}
+
+.weather-hint {
+  margin: 6px 0 8px;
+  opacity: 0.78;
+  font-size: 0.92em;
+}
+
+.weather-panel h3 {
+  margin: 10px 0 6px;
+  font-size: 1rem;
+}
+
+.calendar-summary {
+  border: 1px solid rgba(120, 120, 120, 0.25);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 10px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr;
+  gap: 8px;
+}
+
+.weather-actions.compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.weather-actions.compact button:last-child {
+  grid-column: 1 / -1;
+}
+
+
+.weather-panel.settings {
+  min-width: 390px;
+}
+
+.weather-panel.settings button {
+  white-space: nowrap;
+}
+
+.weather-panel.settings .form-group label {
+  white-space: nowrap;
+}

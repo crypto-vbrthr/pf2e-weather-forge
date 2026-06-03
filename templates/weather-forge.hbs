@@ -1,0 +1,158 @@
+<form class="weather-forge-form">
+  <section class="weather-forge-grid">
+    <article class="weather-panel current">
+      <h2>{{localize "pf2e-weather-forge.ui.currentWeather"}}</h2>
+      <div class="weather-card">
+        <div class="weather-headline">
+          <strong>{{current.timeSegmentLabel}}</strong>
+          <span>{{current.seasonLabel}}</span>
+        </div>
+
+        <p class="weather-description">{{current.description}}</p>
+
+        <dl class="weather-values">
+          <dt>{{localize "pf2e-weather-forge.field.temperature"}}</dt><dd>{{current.temperature}} °C</dd>
+          <dt>{{localize "pf2e-weather-forge.field.precipitation"}}</dt><dd>{{current.precipitationLabel}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.humidity"}}</dt><dd>{{current.humidity}} % · {{current.humidityDescription}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.cloudDensity"}}</dt><dd>{{current.cloudDensity}} % · {{current.cloudDensityDescription}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.windStrength"}}</dt><dd>{{current.windStrength}} · {{current.windStrengthDescription}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.weekday"}}</dt><dd>{{current.weekdayLabel}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.dayOfMonth"}}</dt><dd>{{current.dayOfMonth}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.month"}}</dt><dd>{{current.monthLabel}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.year"}}</dt><dd>{{current.year}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.moonPhase"}}</dt><dd>{{current.moonPhaseLabel}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.climateZone"}}</dt><dd>{{current.climateZoneLabel}}</dd>
+          <dt>{{localize "pf2e-weather-forge.field.extremeWeather"}}</dt><dd>{{current.extremeLabel}}</dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="weather-panel settings">
+      <h2>{{localize "pf2e-weather-forge.ui.settings"}}</h2>
+
+      <h3>{{localize "pf2e-weather-forge.ui.calendar"}}</h3>
+      <div class="calendar-summary">
+        <strong>{{calendar.weekdayLabel}}, {{calendar.dayOfMonth}}. {{calendar.monthLabel}} {{calendar.year}}</strong><br>
+        <span>{{calendar.timeSegmentLabel}} · {{calendar.seasonLabel}} · {{calendar.moonPhaseLabel}}</span>
+      </div>
+
+      <div class="form-group">
+        <label>{{localize "pf2e-weather-forge.field.timeSegment"}}</label>
+        <select name="calendarTimeSegment">
+          {{#each timeSegments}}
+            <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <div class="calendar-grid">
+        <div class="form-group">
+          <label>{{localize "pf2e-weather-forge.field.weekday"}}</label>
+          <select name="calendarWeekday">
+            {{#each weekdays}}
+              <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>{{localize "pf2e-weather-forge.field.dayOfMonth"}}</label>
+          <input type="number" name="calendarDayOfMonth" value="{{calendar.dayOfMonth}}" min="1" max="31">
+        </div>
+      </div>
+
+      <div class="calendar-grid">
+        <div class="form-group">
+          <label>{{localize "pf2e-weather-forge.field.month"}}</label>
+          <select name="calendarMonth">
+            {{#each months}}
+              <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>{{localize "pf2e-weather-forge.field.year"}}</label>
+          <input type="number" name="calendarYear" value="{{calendar.year}}" min="1">
+        </div>
+      </div>
+
+      <div class="weather-actions compact">
+        <button type="button" data-action="previousTime"><i class="fas fa-chevron-left"></i> {{localize "pf2e-weather-forge.ui.previousTime"}}</button>
+        <button type="button" data-action="nextTime">{{localize "pf2e-weather-forge.ui.nextTime"}} <i class="fas fa-chevron-right"></i></button>
+        <button type="button" data-action="previousDay"><i class="fas fa-minus"></i> {{localize "pf2e-weather-forge.ui.previousDay"}}</button>
+        <button type="button" data-action="nextDay"><i class="fas fa-plus"></i> {{localize "pf2e-weather-forge.ui.nextDay"}}</button>
+        <button type="button" data-action="saveCalendar"><i class="fas fa-save"></i> {{localize "pf2e-weather-forge.ui.saveCalendar"}}</button>
+      </div>
+
+      <hr>
+
+      <h3>{{localize "pf2e-weather-forge.ui.weatherGeneration"}}</h3>
+
+      <div class="form-group">
+        <label>{{localize "pf2e-weather-forge.ui.climateZone"}}</label>
+        <select name="climateZone">
+          {{#each climateZones}}
+            <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" name="allowExtreme" checked>
+        <span>{{localize "pf2e-weather-forge.ui.allowExtreme"}}</span>
+      </label>
+
+      <label class="checkbox-row">
+        <input type="checkbox" name="forceExtreme">
+        <span>{{localize "pf2e-weather-forge.ui.forceExtreme"}}</span>
+      </label>
+
+      <div class="form-group">
+        <label>{{localize "pf2e-weather-forge.ui.extremeType"}}</label>
+        <select name="extremeType">
+          {{#each extremeTypes}}
+            <option value="{{key}}">{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <div class="weather-actions">
+        <button type="button" data-action="generate"><i class="fas fa-dice-d20"></i> {{localize "pf2e-weather-forge.ui.generate"}}</button>
+        <button type="button" data-action="accept" {{#unless preview}}disabled{{/unless}}><i class="fas fa-check"></i> {{localize "pf2e-weather-forge.ui.accept"}}</button>
+        <button type="button" data-action="reset"><i class="fas fa-undo"></i> {{localize "pf2e-weather-forge.ui.reset"}}</button>
+      </div>
+    </article>
+
+    <article class="weather-panel preview">
+      <h2>{{localize "pf2e-weather-forge.ui.preview"}}</h2>
+      {{#if preview}}
+        <div class="weather-card">
+          <div class="weather-headline">
+            <strong>{{preview.timeSegmentLabel}}</strong>
+            <span>{{preview.seasonLabel}}</span>
+          </div>
+
+          <p class="weather-description">{{preview.description}}</p>
+
+          <dl class="weather-values">
+            <dt>{{localize "pf2e-weather-forge.field.temperature"}}</dt><dd>{{preview.temperature}} °C</dd>
+            <dt>{{localize "pf2e-weather-forge.field.precipitation"}}</dt><dd>{{preview.precipitationLabel}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.humidity"}}</dt><dd>{{preview.humidity}} % · {{preview.humidityDescription}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.cloudDensity"}}</dt><dd>{{preview.cloudDensity}} % · {{preview.cloudDensityDescription}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.windStrength"}}</dt><dd>{{preview.windStrength}} · {{preview.windStrengthDescription}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.weekday"}}</dt><dd>{{preview.weekdayLabel}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.dayOfMonth"}}</dt><dd>{{preview.dayOfMonth}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.month"}}</dt><dd>{{preview.monthLabel}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.year"}}</dt><dd>{{preview.year}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.moonPhase"}}</dt><dd>{{preview.moonPhaseLabel}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.climateZone"}}</dt><dd>{{preview.climateZoneLabel}}</dd>
+            <dt>{{localize "pf2e-weather-forge.field.extremeWeather"}}</dt><dd>{{preview.extremeLabel}}</dd>
+          </dl>
+        </div>
+      {{else}}
+        <p class="empty-preview">{{localize "pf2e-weather-forge.ui.noPreview"}}</p>
+      {{/if}}
+    </article>
+  </section>
+</form>

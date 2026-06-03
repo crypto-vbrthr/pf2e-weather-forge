@@ -1,0 +1,22 @@
+<div class="weather-card">
+  <div class="weather-headline">
+    <strong>{{weather.timeSegmentLabel}}</strong>
+    <span>{{weather.seasonLabel}}</span>
+  </div>
+
+  <p class="weather-description">{{weather.description}}</p>
+
+  <dl class="weather-values">
+    <dt>{{localize "pf2e-weather-forge.field.temperature"}}</dt><dd>{{weather.temperature}} °C</dd>
+    <dt>{{localize "pf2e-weather-forge.field.precipitation"}}</dt><dd>{{weather.precipitationLabel}}</dd>
+    <dt>{{localize "pf2e-weather-forge.field.humidity"}}</dt><dd>{{weather.humidity}} %</dd>
+    <dt>{{localize "pf2e-weather-forge.field.cloudDensity"}}</dt><dd>{{weather.cloudDensity}} %</dd>
+    <dt>{{localize "pf2e-weather-forge.field.windStrength"}}</dt><dd>{{weather.windStrength}}</dd>
+    <dt>{{localize "pf2e-weather-forge.field.weekday"}}</dt><dd>{{weather.weekdayLabel}}</dd>
+    <dt>{{localize "pf2e-weather-forge.field.month"}}</dt><dd>{{weather.monthLabel}}</dd>
+    <dt>{{localize "pf2e-weather-forge.field.year"}}</dt><dd>{{weather.year}}</dd>
+    <dt>{{localize "pf2e-weather-forge.field.moonPhase"}}</dt><dd>{{weather.moonPhaseLabel}}</dd>
+    <dt>{{localize "pf2e-weather-forge.field.climateZone"}}</dt><dd>{{weather.climateZoneLabel}}</dd>
+    <dt>{{localize "pf2e-weather-forge.field.extremeWeather"}}</dt><dd>{{weather.extremeLabel}}</dd>
+  </dl>
+</div>
