@@ -1,16 +1,17 @@
 {
   "id": "pf2e-weather-forge",
   "title": "PF2e Weather Forge",
-  "description": "A localized weather and calendar generation module for Pathfinder Second Edition in Foundry VTT. Generates persistent, climate-aware weather by time segment with an internal Golarion calendar.",
-  "version": "0.2.2",
+  "description": "A localized weather and calendar generation module for Pathfinder Second Edition in Foundry VTT. Generates persistent, climate-aware living weather with daily temperature curves and an internal Golarion calendar.",
+  "version": "0.3.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
   },
   "authors": [
     {
-      "name": "Bully",
-      "url": "https://github.com/crypto-vbrthr/pf2e-weather-forge"
+      "name": "Your Name",
+      "discord": "your-discord-name",
+      "url": "https://github.com/yourname/pf2e-weather-forge"
     }
   ],
   "esmodules": [
@@ -31,12 +32,12 @@
       "path": "lang/en.json"
     }
   ],
-  "url": "https://github.com/crypto-vbrthr/pf2e-weather-forge",
-  "manifest": "https://raw.githubusercontent.com/crypto-vbrthr/pf2e-weather-forge/main/module.json",
-  "download": "https://github.com/crypto-vbrthr/pf2e-weather-forge/releases/download/v0.2.2/pf2e-weather-forge.zip",
+  "url": "https://github.com/yourname/pf2e-weather-forge",
+  "manifest": "https://raw.githubusercontent.com/yourname/pf2e-weather-forge/main/module.json",
+  "download": "https://github.com/yourname/pf2e-weather-forge/releases/download/v0.3.0/pf2e-weather-forge.zip",
   "license": "MIT",
   "readme": "README.md",
-  "bugs": "https://github.com/crypto-vbrthr/pf2e-weather-forge/issues",
+  "bugs": "https://github.com/yourname/pf2e-weather-forge/issues",
   "relationships": {
     "requires": [],
     "recommends": []

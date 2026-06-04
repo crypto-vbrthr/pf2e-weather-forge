@@ -127,5 +127,17 @@
   "pf2e-weather-forge.moon.waningGibbous": "Waning Gibbous",
   "pf2e-weather-forge.moon.lastQuarter": "Last Quarter",
   "pf2e-weather-forge.moon.waningCrescent": "Waning Crescent",
-  "pf2e-weather-forge.notification.calendarSaved": "The internal calendar has been saved."
+  "pf2e-weather-forge.notification.calendarSaved": "The internal calendar has been saved.",
+  "pf2e-weather-forge.field.dailyMinMax": "Daily min/max",
+  "pf2e-weather-forge.field.trend": "Trend",
+  "pf2e-weather-forge.trend.warmer": "warmer",
+  "pf2e-weather-forge.trend.cooler": "cooler",
+  "pf2e-weather-forge.trend.stable": "stable",
+  "pf2e-weather-forge.extremePhase.building": "building",
+  "pf2e-weather-forge.extremePhase.active": "active",
+  "pf2e-weather-forge.extremePhase.fading": "fading",
+  "pf2e-weather-forge.precipitation.mist": "Mist/fog",
+  "pf2e-weather-forge.precipitation.thunderstorm": "Thunderstorm",
+  "pf2e-weather-forge.description.mist": "Low, damp mist hangs in the air and swallows sound like wet felt.",
+  "pf2e-weather-forge.description.thunderstorm": "Heavy clouds tower overhead, thunder rolls across the land, and rain lashes down in gusts."
 }

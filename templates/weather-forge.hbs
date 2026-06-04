@@ -12,6 +12,8 @@
 
         <dl class="weather-values">
           <dt>{{localize "pf2e-weather-forge.field.temperature"}}</dt><dd>{{current.temperature}} °C</dd>
+          <dt>{{localize "pf2e-weather-forge.field.dailyMinMax"}}</dt><dd>{{current.dailyMinTemp}} / {{current.dailyMaxTemp}} °C</dd>
+          <dt>{{localize "pf2e-weather-forge.field.trend"}}</dt><dd>{{current.trendLabel}}</dd>
           <dt>{{localize "pf2e-weather-forge.field.precipitation"}}</dt><dd>{{current.precipitationLabel}}</dd>
           <dt>{{localize "pf2e-weather-forge.field.humidity"}}</dt><dd>{{current.humidity}} % · {{current.humidityDescription}}</dd>
           <dt>{{localize "pf2e-weather-forge.field.cloudDensity"}}</dt><dd>{{current.cloudDensity}} % · {{current.cloudDensityDescription}}</dd>
@@ -137,6 +139,8 @@
 
           <dl class="weather-values">
             <dt>{{localize "pf2e-weather-forge.field.temperature"}}</dt><dd>{{preview.temperature}} °C</dd>
+            <dt>{{localize "pf2e-weather-forge.field.dailyMinMax"}}</dt><dd>{{preview.dailyMinTemp}} / {{preview.dailyMaxTemp}} °C</dd>
+            <dt>{{localize "pf2e-weather-forge.field.trend"}}</dt><dd>{{preview.trendLabel}}</dd>
             <dt>{{localize "pf2e-weather-forge.field.precipitation"}}</dt><dd>{{preview.precipitationLabel}}</dd>
             <dt>{{localize "pf2e-weather-forge.field.humidity"}}</dt><dd>{{preview.humidity}} % · {{preview.humidityDescription}}</dd>
             <dt>{{localize "pf2e-weather-forge.field.cloudDensity"}}</dt><dd>{{preview.cloudDensity}} % · {{preview.cloudDensityDescription}}</dd>

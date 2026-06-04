@@ -127,5 +127,17 @@
   "pf2e-weather-forge.moon.waningGibbous": "Abnehmender Mond",
   "pf2e-weather-forge.moon.lastQuarter": "Letztes Viertel",
   "pf2e-weather-forge.moon.waningCrescent": "Abnehmende Sichel",
-  "pf2e-weather-forge.notification.calendarSaved": "Der interne Kalender wurde gespeichert."
+  "pf2e-weather-forge.notification.calendarSaved": "Der interne Kalender wurde gespeichert.",
+  "pf2e-weather-forge.field.dailyMinMax": "Tagesminimum/-maximum",
+  "pf2e-weather-forge.field.trend": "Trend",
+  "pf2e-weather-forge.trend.warmer": "wärmer",
+  "pf2e-weather-forge.trend.cooler": "kühler",
+  "pf2e-weather-forge.trend.stable": "stabil",
+  "pf2e-weather-forge.extremePhase.building": "zieht auf",
+  "pf2e-weather-forge.extremePhase.active": "aktiv",
+  "pf2e-weather-forge.extremePhase.fading": "klingt ab",
+  "pf2e-weather-forge.precipitation.mist": "Nebel/Dunst",
+  "pf2e-weather-forge.precipitation.thunderstorm": "Gewitter",
+  "pf2e-weather-forge.description.mist": "Feuchter Dunst hängt bodennah in der Luft und verschluckt Geräusche wie nasser Filz.",
+  "pf2e-weather-forge.description.thunderstorm": "Schwere Wolken türmen sich auf, Donner rollt über die Landschaft und Regen peitscht in Böen herab."
 }

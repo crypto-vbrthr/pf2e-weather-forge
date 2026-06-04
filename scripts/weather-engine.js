@@ -74,6 +74,7 @@ export function defaultWeatherState() {
     year: 4726,
     moonPhase: "waxingCrescent",
     season: "spring",
+    dailyProfile: null,
     extremeWeather: null,
     descriptionKey: "description.clearMild"
   };
@@ -140,16 +141,27 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function dateKey(weather) {
+  return `${weather.year ?? 4726}-${weather.month ?? "abadius"}-${weather.dayOfMonth ?? 1}`;
+}
+
 function getSeasonalTemperatureRange(climate, season = "spring") {
   const normalizedSeason = ["spring", "summer", "autumn", "winter"].includes(season) ? season : "spring";
   return climate.seasonalTemp?.[normalizedSeason] ?? climate.temp ?? [0, 20];
 }
 
-function applyTimeOfDayTemperatureModifier(temperature, timeSegment) {
-  if (timeSegment === "night") return temperature - randomInt(2, 5);
-  if (timeSegment === "morning") return temperature - randomInt(0, 2);
-  if (timeSegment === "noon" || timeSegment === "afternoon") return temperature + randomInt(1, 4);
-  return temperature;
+function getDailyTemperatureAtSegment(profile, timeSegment) {
+  const min = Number(profile?.minTemp ?? 10);
+  const max = Number(profile?.maxTemp ?? min + 8);
+  const span = Math.max(0, max - min);
+  const factors = {
+    night: 0,
+    morning: 0.25,
+    noon: 0.75,
+    afternoon: 1,
+    evening: 0.5
+  };
+  return Math.round(min + span * (factors[timeSegment] ?? 0.5));
 }
 
 function clampTemperatureForClimate(weather, climate, { allowExtremeOverflow = true } = {}) {
@@ -159,33 +171,114 @@ function clampTemperatureForClimate(weather, climate, { allowExtremeOverflow = t
   return weather;
 }
 
-function choosePrecipitation(rainChance, cloudDensity, extremeWeather) {
+function createDailyProfile(climate, weather, previousProfile = null, extremeWeather = null) {
+  const range = getSeasonalTemperatureRange(climate, weather.season);
+  const seasonalMin = range[0];
+  const seasonalMax = range[1];
+  const seasonalSpan = Math.max(4, seasonalMax - seasonalMin);
+
+  const previousMid = previousProfile
+    ? Math.round(((previousProfile.minTemp ?? seasonalMin) + (previousProfile.maxTemp ?? seasonalMax)) / 2)
+    : randomInt(seasonalMin + 2, seasonalMax - 2);
+
+  let dayMid = clamp(previousMid + randomInt(-3, 3), seasonalMin + 2, seasonalMax - 2);
+  let daySpan = clamp(Math.round(seasonalSpan * 0.28) + randomInt(-2, 3), 4, 14);
+
+  if (extremeWeather?.type === "heatwave") dayMid += 4 + (extremeWeather.intensity ?? 1) * 2;
+  if (extremeWeather?.type === "coldSnap" || extremeWeather?.type === "blizzard") dayMid -= 4 + (extremeWeather.intensity ?? 1) * 2;
+  if (weather.cloudDensity > 75 || weather.precipitation === "heavyRain") daySpan = Math.max(3, daySpan - 2);
+  if (["desert", "mediterranean"].includes(weather.climateZone)) daySpan += 2;
+  if (["coastal", "swamp", "tropical"].includes(weather.climateZone)) daySpan = Math.max(3, daySpan - 2);
+
+  let minTemp = Math.round(dayMid - daySpan / 2);
+  let maxTemp = Math.round(dayMid + daySpan / 2);
+  const overflow = extremeWeather ? 8 : 0;
+  minTemp = clamp(minTemp, seasonalMin - overflow, seasonalMax + overflow);
+  maxTemp = clamp(maxTemp, minTemp + 2, seasonalMax + overflow);
+
+  const previousAverage = previousProfile ? Math.round(((previousProfile.minTemp ?? minTemp) + (previousProfile.maxTemp ?? maxTemp)) / 2) : null;
+  const currentAverage = Math.round((minTemp + maxTemp) / 2);
+  let trend = "stable";
+  if (previousAverage !== null && currentAverage >= previousAverage + 2) trend = "warmer";
+  if (previousAverage !== null && currentAverage <= previousAverage - 2) trend = "cooler";
+
+  return {
+    dateKey: dateKey(weather),
+    minTemp,
+    maxTemp,
+    trend,
+    weatherPattern: extremeWeather?.type ?? (weather.cloudDensity > 70 ? "cloudy" : "fair")
+  };
+}
+
+function ensureDailyProfile(weather, climate, activeExtreme = null, previousProfile = null) {
+  if (weather.dailyProfile?.dateKey === dateKey(weather)) return weather.dailyProfile;
+  return createDailyProfile(climate, weather, previousProfile ?? weather.dailyProfile, activeExtreme);
+}
+
+function timeWeightedRainChance(baseRainChance, timeSegment, cloudDensity, humidity) {
+  let chance = baseRainChance;
+  if (timeSegment === "afternoon") chance += 8;
+  if (timeSegment === "evening") chance += 5;
+  if (timeSegment === "morning") chance += 3;
+  if (timeSegment === "night") chance -= 4;
+  if (cloudDensity > 80) chance += 15;
+  if (humidity > 80) chance += 8;
+  return clamp(chance, 0, 95);
+}
+
+function choosePrecipitation(rainChance, cloudDensity, extremeWeather, weather = {}) {
   if (extremeWeather?.type === "storm") return "heavyRain";
   if (extremeWeather?.type === "blizzard") return "snow";
+  if (["night", "morning"].includes(weather.timeSegment) && weather.humidity >= 78 && weather.cloudDensity >= 45 && randomInt(1, 100) <= 25) return "mist";
   const roll = randomInt(1, 100);
-  if (roll > rainChance) return "none";
+  if (roll > timeWeightedRainChance(rainChance, weather.timeSegment, cloudDensity, weather.humidity ?? 50)) return "none";
+  if (cloudDensity > 85 && ["afternoon", "evening"].includes(weather.timeSegment) && randomInt(1, 100) <= 20) return "thunderstorm";
   if (cloudDensity > 80) return "rain";
   if (cloudDensity > 60) return "lightRain";
   return "drizzle";
 }
 
-function maybeStartExtremeWeather(climate, settings) {
+function maybeStartExtremeWeather(climate, settings, weather = {}) {
   if (settings.forceExtreme) {
-    return { type: settings.extremeType || "storm", intensity: 2, remainingSegments: randomInt(2, 5), decayChance: 25 };
+    return { type: settings.extremeType || "storm", intensity: 2, remainingSegments: randomInt(4, 12), decayChance: 12, phase: "building" };
   }
   if (!settings.allowExtreme) return null;
-  if (randomInt(1, 100) <= climate.extremeChance) {
+  let chance = climate.extremeChance;
+  if (["afternoon", "evening"].includes(weather.timeSegment)) chance += 2;
+  if (weather.cloudDensity > 85) chance += 2;
+  if (randomInt(1, 100) <= chance) {
     const candidates = ["storm", "heatwave", "coldSnap", "fog", "blizzard"];
-    return { type: candidates[randomInt(0, candidates.length - 1)], intensity: randomInt(1, 3), remainingSegments: randomInt(2, 6), decayChance: 20 };
+    const type = candidates[randomInt(0, candidates.length - 1)];
+    const longDuration = ["heatwave", "coldSnap"].includes(type);
+    return {
+      type,
+      intensity: randomInt(1, 3),
+      remainingSegments: longDuration ? randomInt(10, 28) : randomInt(4, 14),
+      decayChance: longDuration ? 8 : 14,
+      phase: "building"
+    };
   }
   return null;
 }
 
 function progressExtremeWeather(extremeWeather) {
   if (!extremeWeather) return null;
-  const next = { ...extremeWeather, remainingSegments: extremeWeather.remainingSegments - 1 };
-  if (next.remainingSegments <= 0 || randomInt(1, 100) <= next.decayChance) return null;
-  if (randomInt(1, 100) <= 20) next.intensity = clamp(next.intensity + randomInt(-1, 1), 1, 3);
+  const remainingSegments = Math.max(0, (extremeWeather.remainingSegments ?? 1) - 1);
+  if (remainingSegments <= 0) return null;
+
+  const next = { ...extremeWeather, remainingSegments };
+  if (randomInt(1, 100) <= (next.decayChance ?? 12)) {
+    next.intensity = clamp((next.intensity ?? 1) - 1, 0, 3);
+    next.phase = "fading";
+    if (next.intensity <= 0) return null;
+  } else if (randomInt(1, 100) <= 15) {
+    next.intensity = clamp((next.intensity ?? 1) + randomInt(-1, 1), 1, 3);
+  }
+
+  if (remainingSegments <= 2) next.phase = "fading";
+  else if ((extremeWeather.remainingSegments ?? 0) - remainingSegments < 2) next.phase = "building";
+  else next.phase = "active";
   return next;
 }
 
@@ -196,17 +289,18 @@ function applyExtremeModifiers(weather) {
   if (extreme.type === "storm") {
     weather.windStrength = clamp(weather.windStrength + 3 + intensity, 0, 12);
     weather.cloudDensity = clamp(weather.cloudDensity + 25, 0, 100);
-    weather.precipitation = "heavyRain";
+    weather.precipitation = weather.timeSegment === "afternoon" || weather.timeSegment === "evening" ? "thunderstorm" : "heavyRain";
   }
   if (extreme.type === "heatwave") {
-    weather.temperature += 6 + intensity * 2;
+    weather.temperature += 4 + intensity * 2;
     weather.humidity = clamp(weather.humidity - 10, 0, 100);
     weather.cloudDensity = clamp(weather.cloudDensity - 20, 0, 100);
   }
-  if (extreme.type === "coldSnap") weather.temperature -= 6 + intensity * 2;
+  if (extreme.type === "coldSnap") weather.temperature -= 4 + intensity * 2;
   if (extreme.type === "fog") {
     weather.humidity = clamp(weather.humidity + 20, 0, 100);
     weather.cloudDensity = clamp(weather.cloudDensity + 15, 0, 100);
+    if (["night", "morning"].includes(weather.timeSegment)) weather.precipitation = "mist";
   }
   if (extreme.type === "blizzard") {
     weather.temperature -= 8;
@@ -219,8 +313,10 @@ function applyExtremeModifiers(weather) {
 
 function descriptionKeyFor(weather) {
   if (weather.extremeWeather) return `description.extreme.${weather.extremeWeather.type}`;
+  if (weather.precipitation === "thunderstorm") return "description.thunderstorm";
   if (weather.precipitation === "heavyRain") return "description.heavyRain";
   if (["rain", "lightRain", "drizzle"].includes(weather.precipitation)) return "description.lightRain";
+  if (weather.precipitation === "mist") return "description.mist";
   if (weather.precipitation === "snow") return "description.snow";
   if (weather.cloudDensity > 75) return "description.overcast";
   if (weather.windStrength >= 6) return "description.windy";
@@ -231,19 +327,18 @@ function descriptionKeyFor(weather) {
 
 export function createInitialWeatherState(climateZone = "temperate", calendar = {}) {
   const climate = CLIMATE_ZONES[climateZone] ?? CLIMATE_ZONES.temperate;
-  const base = { ...defaultWeatherState(), ...calendar };
-  const tempRange = getSeasonalTemperatureRange(climate, base.season);
+  const base = { ...defaultWeatherState(), ...calendar, climateZone };
   const weather = {
     ...base,
-    climateZone,
-    temperature: applyTimeOfDayTemperatureModifier(randomInt(...tempRange), base.timeSegment),
     humidity: randomInt(...climate.humidity),
     cloudDensity: randomInt(15, 65),
     windStrength: randomInt(...climate.wind),
     precipitation: "none",
     extremeWeather: null
   };
-  weather.precipitation = choosePrecipitation(Math.max(0, climate.rainChance - 10), weather.cloudDensity, null);
+  weather.dailyProfile = createDailyProfile(climate, weather, null, null);
+  weather.temperature = getDailyTemperatureAtSegment(weather.dailyProfile, weather.timeSegment);
+  weather.precipitation = choosePrecipitation(Math.max(0, climate.rainChance - 10), weather.cloudDensity, null, weather);
   clampTemperatureForClimate(weather, climate, { allowExtremeOverflow: false });
   weather.descriptionKey = descriptionKeyFor(weather);
   return weather;
@@ -253,28 +348,25 @@ export function generateNextWeather(current, settings = {}) {
   const climateZone = settings.climateZone || current.climateZone || "temperate";
   const climate = CLIMATE_ZONES[climateZone] ?? CLIMATE_ZONES.temperate;
   const nextSegment = getNextTimeSegment(current.timeSegment);
-  const activeExtreme = progressExtremeWeather(current.extremeWeather) ?? maybeStartExtremeWeather(climate, settings);
-
-  const season = current.season || "spring";
-  const tempRange = getSeasonalTemperatureRange(climate, season);
-  let temperature = (current.temperature ?? randomInt(...tempRange)) + randomInt(-3, 3);
-  temperature = applyTimeOfDayTemperatureModifier(temperature, nextSegment);
-  temperature = clamp(temperature, tempRange[0] - 2, tempRange[1] + 2);
+  const activeExtreme = progressExtremeWeather(current.extremeWeather) ?? maybeStartExtremeWeather(climate, settings, { ...current, timeSegment: nextSegment });
 
   let weather = {
     ...current,
     timeSegment: nextSegment,
     climateZone,
-    temperature,
-    humidity: clamp((current.humidity ?? randomInt(...climate.humidity)) + randomInt(-10, 10), 0, 100),
-    cloudDensity: clamp((current.cloudDensity ?? 45) + randomInt(-20, 20), 0, 100),
+    humidity: clamp((current.humidity ?? randomInt(...climate.humidity)) + randomInt(-8, 8), 0, 100),
+    cloudDensity: clamp((current.cloudDensity ?? 45) + randomInt(-18, 18), 0, 100),
     windStrength: clamp((current.windStrength ?? 2) + randomInt(-2, 2), 0, 12),
     extremeWeather: activeExtreme
   };
 
+  const previousDateKey = dateKey(weather);
   if (shouldAdvanceDate(current.timeSegment, nextSegment)) weather = advanceCalendarDate(weather);
+  const newDayStarted = previousDateKey !== dateKey(weather) || weather.dailyProfile?.dateKey !== dateKey(weather);
+  weather.dailyProfile = ensureDailyProfile(weather, climate, activeExtreme, newDayStarted ? current.dailyProfile : weather.dailyProfile);
+  weather.temperature = getDailyTemperatureAtSegment(weather.dailyProfile, weather.timeSegment);
 
-  weather.precipitation = choosePrecipitation(climate.rainChance, weather.cloudDensity, weather.extremeWeather);
+  weather.precipitation = choosePrecipitation(climate.rainChance, weather.cloudDensity, weather.extremeWeather, weather);
   weather = applyExtremeModifiers(weather);
   weather = clampTemperatureForClimate(weather, climate);
   weather.descriptionKey = descriptionKeyFor(weather);

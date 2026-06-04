@@ -1,37 +1,36 @@
 # PF2e Weather Forge
 
-PF2e Weather Forge is a Foundry VTT module for Pathfinder Second Edition that generates persistent, climate-aware weather by time segment.
+PF2e Weather Forge is a localized Foundry VTT module for Pathfinder Second Edition that generates persistent, climate-aware weather using an internal Golarion calendar.
 
 ## Features
 
-- GM-only toolbar button on the scene controls
-- Three-column UI: current weather, settings/calendar, preview
-- Climate zones including temperate, coastal, arctic, desert, tropical, mountain, swamp, mediterranean, and magically distorted
-- Persistent weather state and preview state
-- Internal Golarion Calendar Forge
-  - Golarion weekdays
-  - Golarion months
-  - year, month day, season, moon phase
-  - previous/next time segment
-  - previous/next day
-  - manual calendar editing
-- Extreme weather that can persist and decay over multiple time segments
-- German and English localization
-- Small public API for macros and later module integration
+- GM-only scene toolbar button
+- Foundry V13/V14 compatible ApplicationV2 UI
+- Three-column layout: current weather, settings/calendar, preview
+- Internal Calendar Forge with Golarion weekdays, months, seasons, moon phases, and time segments
+- Climate zones including temperate, coastal, arctic, desert, tropical, mountain, swamp, magical, and mediterranean
+- Living Weather v0.3:
+  - Daily minimum and maximum temperatures
+  - Temperature curve by time segment
+  - Warmer/cooler/stable daily trend
+  - Time-weighted weather phenomena
+  - More likely mist at night/morning
+  - More likely thunderstorms in afternoon/evening
+  - Multi-segment and multi-day extreme weather patterns
+- Localized German and English UI
 
-## Macro API
+## API
 
 ```js
 game.modules.get("pf2e-weather-forge").api.open();
+game.modules.get("pf2e-weather-forge").api.getWeather();
 await game.modules.get("pf2e-weather-forge").api.getCalendar();
-await game.modules.get("pf2e-weather-forge").api.nextTime();
-await game.modules.get("pf2e-weather-forge").api.nextDay();
 ```
 
-## 0.2.2
+## Publishing Notes
 
-- The settings column is wider to reduce line wrapping.
-- Calendar form values are now applied before weather generation, reset, and calendar navigation actions.
-- Added season-aware temperature ranges for every climate zone.
-- Mediterranean summer temperatures are clamped to a believable range.
-- Temperature generation now respects the current internal calendar season and time segment.
+Before publishing, update `module.json` with your GitHub repository URL, manifest URL, download URL, author name, and Discord name.
+
+## License
+
+MIT

@@ -122,8 +122,11 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       moonPhaseLabel: game.i18n.localize(`${MODULE_ID}.moon.${weather.moonPhase}`),
       seasonLabel: game.i18n.localize(`${MODULE_ID}.season.${weather.season}`),
       description: game.i18n.localize(`${MODULE_ID}.${weather.descriptionKey}`),
+      dailyMinTemp: weather.dailyProfile?.minTemp ?? weather.temperature,
+      dailyMaxTemp: weather.dailyProfile?.maxTemp ?? weather.temperature,
+      trendLabel: game.i18n.localize(`${MODULE_ID}.trend.${weather.dailyProfile?.trend ?? "stable"}`),
       extremeLabel: weather.extremeWeather
-        ? game.i18n.localize(`${MODULE_ID}.extreme.${weather.extremeWeather.type}`)
+        ? `${game.i18n.localize(`${MODULE_ID}.extreme.${weather.extremeWeather.type}`)} · ${game.i18n.localize(`${MODULE_ID}.extremePhase.${weather.extremeWeather.phase ?? "active"}`)} · ${weather.extremeWeather.remainingSegments ?? "?"}`
         : game.i18n.localize(`${MODULE_ID}.extreme.none`)
     };
   }
