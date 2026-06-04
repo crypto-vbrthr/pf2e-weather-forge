@@ -1,6 +1,6 @@
 import { MODULE_ID, CLIMATE_ZONES, TIME_SEGMENTS, WEEKDAYS, MONTHS, MONTH_LENGTHS, defaultWeatherState, createInitialWeatherState, generateNextWeather } from "./weather-engine.js";
 import { MOON_PHASES, applyCalendarToWeather, calendarFromFormData, extractCalendarFromWeather, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, normalizeCalendarState } from "./calendar-engine.js";
-import { appendWeatherHistory, clearWeatherHistory, getWeatherHistory, historyDescriptorKey } from "./history-engine.js";
+import { HISTORY_LIMITS, appendWeatherHistory, clearWeatherHistory, getHistoryLimit, getWeatherHistory, historyDescriptorKey } from "./history-engine.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -27,7 +27,10 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       previousTime: PF2eWeatherForgeApp.#onPreviousTime,
       nextDay: PF2eWeatherForgeApp.#onNextDay,
       previousDay: PF2eWeatherForgeApp.#onPreviousDay,
-      clearHistory: PF2eWeatherForgeApp.#onClearHistory
+      clearHistory: PF2eWeatherForgeApp.#onClearHistory,
+      saveSettings: PF2eWeatherForgeApp.#onSaveSettings,
+      publishGM: PF2eWeatherForgeApp.#onPublishGM,
+      publishPublic: PF2eWeatherForgeApp.#onPublishPublic
     }
   };
 
@@ -73,10 +76,30 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
         key,
         label: game.i18n.localize(`${MODULE_ID}.extreme.${key}`)
       })),
-      history: this.#prepareHistory(getWeatherHistory())
+      history: this.#prepareHistory(getWeatherHistory()),
+      appSettings: this.#prepareSettings(current)
     };
   }
 
+  #prepareSettings(current) {
+    const configuredLimit = getHistoryLimit();
+    const chatMode = game.settings.get(MODULE_ID, "chatOutputMode") ?? "gm";
+    const allowExtreme = game.settings.get(MODULE_ID, "allowExtreme") ?? true;
+    return {
+      allowExtreme,
+      chatModes: ["gm", "public", "ask"].map(key => ({
+        key,
+        label: game.i18n.localize(`${MODULE_ID}.chat.mode.${key}`),
+        selected: key === chatMode
+      })),
+      historyLimits: HISTORY_LIMITS.map(key => ({
+        key,
+        label: game.i18n.localize(`${MODULE_ID}.settings.historyLimit.${key}`),
+        selected: key === configuredLimit
+      })),
+      currentClimateZone: current.climateZone
+    };
+  }
 
 
   #prepareHistory(entries) {
@@ -211,6 +234,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
     const calendar = await setCalendarState(calendarFromFormData(fd));
+    await PF2eWeatherForgeApp.#persistUiSettings(fd);
     const current = applyCalendarToWeather(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), calendar);
     const preview = generateNextWeather(current, {
       climateZone: fd.get("climateZone"),
@@ -240,6 +264,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const fd = new FormData(form);
     const climateZone = fd.get("climateZone") || "temperate";
     const calendar = await setCalendarState(calendarFromFormData(fd));
+    await PF2eWeatherForgeApp.#persistUiSettings(fd);
     await game.settings.set(MODULE_ID, "weatherState", applyCalendarToWeather(createInitialWeatherState(climateZone, calendar), calendar));
     await game.settings.set(MODULE_ID, "weatherPreview", null);
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.weatherReset`));
@@ -252,6 +277,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const fd = new FormData(form);
     const calendar = calendarFromFormData(fd);
     await setCalendarState(calendar);
+    await PF2eWeatherForgeApp.#persistUiSettings(fd);
     await game.settings.set(MODULE_ID, "weatherPreview", null);
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.calendarSaved`));
     this.render();
@@ -304,4 +330,120 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.historyCleared`));
     this.render();
   }
+
+  static async #persistUiSettings(fd) {
+    if (!fd) return;
+    const historyLimit = String(fd.get("historyLimit") ?? getHistoryLimit());
+    if (HISTORY_LIMITS.includes(historyLimit)) await game.settings.set(MODULE_ID, "historyLimit", historyLimit);
+    const chatOutputMode = String(fd.get("chatOutputMode") ?? game.settings.get(MODULE_ID, "chatOutputMode") ?? "gm");
+    if (["gm", "public", "ask"].includes(chatOutputMode)) await game.settings.set(MODULE_ID, "chatOutputMode", chatOutputMode);
+    await game.settings.set(MODULE_ID, "allowExtreme", fd.get("allowExtreme") === "on");
+  }
+
+  static async #onSaveSettings(event, target) {
+    event.preventDefault();
+    const form = target.closest("form") ?? this.element;
+    const fd = new FormData(form);
+    await setCalendarState(calendarFromFormData(fd));
+    await PF2eWeatherForgeApp.#persistUiSettings(fd);
+    ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.settingsSaved`));
+    this.render();
+  }
+
+  static async #onPublishGM(event) {
+    event.preventDefault();
+    await PF2eWeatherForgeApp.#publishWeather("gm");
+  }
+
+  static async #onPublishPublic(event) {
+    event.preventDefault();
+    await PF2eWeatherForgeApp.#publishWeather("public");
+  }
+
+  static async #publishWeather(mode = "gm") {
+    const weather = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+    const prepared = PF2eWeatherForgeApp.#prepareWeatherForChat(weather);
+    const content = PF2eWeatherForgeApp.#buildWeatherChatCard(prepared, mode);
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ alias: game.i18n.localize(`${MODULE_ID}.chat.speaker`) }),
+      content
+    };
+    if (mode === "gm") {
+      messageData.whisper = ChatMessage.getWhisperRecipients("GM").map(user => user.id);
+    }
+    await ChatMessage.create(messageData);
+  }
+
+  static #chatDescriptorKey(type, value) {
+    if (type === "humidity") {
+      if (value < 30) return "dry";
+      if (value < 60) return "normal";
+      if (value < 80) return "humid";
+      return "veryHumid";
+    }
+    if (type === "cloudDensity") {
+      if (value < 20) return "clear";
+      if (value < 45) return "scattered";
+      if (value < 75) return "cloudy";
+      return "overcast";
+    }
+    if (type === "windStrength") {
+      if (value <= 0) return "calm";
+      if (value <= 2) return "breeze";
+      if (value <= 5) return "windy";
+      if (value <= 8) return "strong";
+      return "violent";
+    }
+    return "normal";
+  }
+
+  static #prepareWeatherForChat(weather) {
+    const esc = foundry.utils.escapeHTML;
+    const extreme = weather.extremeWeather
+      ? `${game.i18n.localize(`${MODULE_ID}.extreme.${weather.extremeWeather.type}`)} · ${game.i18n.localize(`${MODULE_ID}.extremePhase.${weather.extremeWeather.phase ?? "active"}`)} · ${weather.extremeWeather.remainingSegments ?? "?"}`
+      : game.i18n.localize(`${MODULE_ID}.extreme.none`);
+    return {
+      title: game.i18n.localize(`${MODULE_ID}.chat.title`),
+      date: `${game.i18n.localize(`${MODULE_ID}.weekday.${weather.weekday}`)}, ${weather.dayOfMonth}. ${game.i18n.localize(`${MODULE_ID}.month.${weather.month}`)} ${weather.year}`,
+      time: game.i18n.localize(`${MODULE_ID}.time.${weather.timeSegment}`),
+      season: game.i18n.localize(`${MODULE_ID}.season.${weather.season}`),
+      moon: game.i18n.localize(`${MODULE_ID}.moon.${weather.moonPhase}`),
+      description: game.i18n.localize(`${MODULE_ID}.${weather.descriptionKey ?? "description.clearMild"}`),
+      temperature: `${weather.temperature} °C`,
+      dailyMinMax: `${weather.dailyProfile?.minTemp ?? weather.temperature} / ${weather.dailyProfile?.maxTemp ?? weather.temperature} °C`,
+      trend: game.i18n.localize(`${MODULE_ID}.trend.${weather.dailyProfile?.trend ?? "stable"}`),
+      precipitation: game.i18n.localize(`${MODULE_ID}.precipitation.${weather.precipitation}`),
+      humidity: `${weather.humidity} % · ${game.i18n.localize(`${MODULE_ID}.humidity.${PF2eWeatherForgeApp.#chatDescriptorKey("humidity", weather.humidity ?? 0)}`)}`,
+      cloudDensity: `${weather.cloudDensity} % · ${game.i18n.localize(`${MODULE_ID}.cloudDensity.${PF2eWeatherForgeApp.#chatDescriptorKey("cloudDensity", weather.cloudDensity ?? 0)}`)}`,
+      windStrength: `${weather.windStrength} · ${game.i18n.localize(`${MODULE_ID}.windStrength.${PF2eWeatherForgeApp.#chatDescriptorKey("windStrength", weather.windStrength ?? 0)}`)}`,
+      climate: game.i18n.localize(`${MODULE_ID}.climate.${weather.climateZone}`),
+      extreme,
+      esc
+    };
+  }
+
+  static #buildWeatherChatCard(w, mode = "gm") {
+    const e = foundry.utils.escapeHTML;
+    const rows = [
+      [game.i18n.localize(`${MODULE_ID}.field.temperature`), w.temperature],
+      ...(mode === "gm" ? [[game.i18n.localize(`${MODULE_ID}.field.dailyMinMax`), w.dailyMinMax]] : []),
+      [game.i18n.localize(`${MODULE_ID}.field.precipitation`), w.precipitation],
+      [game.i18n.localize(`${MODULE_ID}.field.humidity`), w.humidity],
+      [game.i18n.localize(`${MODULE_ID}.field.cloudDensity`), w.cloudDensity],
+      [game.i18n.localize(`${MODULE_ID}.field.windStrength`), w.windStrength],
+      [game.i18n.localize(`${MODULE_ID}.field.trend`), w.trend],
+      [game.i18n.localize(`${MODULE_ID}.field.climateZone`), w.climate],
+      [game.i18n.localize(`${MODULE_ID}.field.moonPhase`), w.moon],
+      [game.i18n.localize(`${MODULE_ID}.field.extremeWeather`), w.extreme]
+    ].map(([label, value]) => `<dt>${e(label)}</dt><dd>${e(String(value))}</dd>`).join("");
+
+    return `
+      <article class="pf2e-weather-forge-chat-card">
+        <h2><i class="fas fa-cloud-sun-rain"></i> ${e(w.title)}</h2>
+        <div class="weather-chat-meta"><strong>${e(w.date)}</strong><br>${e(w.time)} · ${e(w.season)}</div>
+        <p class="weather-chat-description">${e(w.description)}</p>
+        <dl>${rows}</dl>
+      </article>`;
+  }
+
 }

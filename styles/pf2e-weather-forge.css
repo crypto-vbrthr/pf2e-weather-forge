@@ -278,3 +278,83 @@
 .weather-history-tab .history-list {
   max-height: 620px;
 }
+
+.weather-forge-grid-compact {
+  grid-template-columns: minmax(310px, 1fr) minmax(260px, 0.75fr) minmax(310px, 1fr);
+}
+
+#weather-forge-tab-settings:checked ~ .weather-tabs label[for="weather-forge-tab-settings"] {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 -2px 0 currentColor;
+}
+
+#weather-forge-tab-settings:checked ~ .weather-settings-tab {
+  display: block;
+}
+
+.settings-tab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.settings-section {
+  min-height: 420px;
+}
+
+.generation-actions .weather-actions {
+  margin-top: 12px;
+}
+
+.weather-actions.two-buttons {
+  grid-template-columns: 1fr 1fr;
+}
+
+.weather-actions.two-buttons button:last-child {
+  grid-column: auto;
+}
+
+.pf2e-weather-forge-chat-card {
+  border: 1px solid rgba(120, 120, 120, 0.35);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pf2e-weather-forge-chat-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
+
+.pf2e-weather-forge-chat-card .weather-chat-meta {
+  margin-bottom: 8px;
+}
+
+.pf2e-weather-forge-chat-card .weather-chat-description {
+  margin: 8px 0 10px;
+  font-style: italic;
+}
+
+.pf2e-weather-forge-chat-card dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  margin: 0;
+}
+
+.pf2e-weather-forge-chat-card dt {
+  font-weight: 700;
+}
+
+.pf2e-weather-forge-chat-card dd {
+  margin: 0;
+  text-align: right;
+}
+
+@media (max-width: 1100px) {
+  .weather-forge-grid,
+  .weather-forge-grid-compact,
+  .settings-tab-grid {
+    grid-template-columns: 1fr;
+  }
+}

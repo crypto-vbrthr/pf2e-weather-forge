@@ -49,3 +49,17 @@ MIT
 
 - Wettergenerierung und Wetterhistorie liegen nun in zwei lokalisierten Reitern innerhalb desselben Fensters.
 - Die Historie nimmt keinen zusätzlichen Platz unterhalb der Generierung mehr ein.
+
+## v0.5.0 UI & Chat
+
+- Adds a third localized tab for settings.
+- Moves climate, calendar, history limit, and chat output options into the Settings tab.
+- Adds localized chat cards for the current weather.
+- Weather can be published as a GM whisper or publicly to the chat.
+- Keeps history entries localization-friendly by continuing to store keys and raw values.
+
+
+## v0.5.1
+
+- Öffentliche ChatCards zeigen kein Tagesminimum/-maximum mehr.
+- GM-Whisper enthält weiterhin die vollständigen Wetterdetails.

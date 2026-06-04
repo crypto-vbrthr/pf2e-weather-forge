@@ -88,11 +88,36 @@ Hooks.once("init", () => {
     default: defaultWeatherHistory()
   });
 
+
+
+  game.settings.register(MODULE_ID, "chatOutputMode", {
+    name: `${MODULE_ID}.settings.chatOutputMode.name`,
+    hint: `${MODULE_ID}.settings.chatOutputMode.hint`,
+    scope: "world",
+    config: false,
+    type: String,
+    default: "gm",
+    choices: {
+      "gm": `${MODULE_ID}.chat.mode.gm`,
+      "public": `${MODULE_ID}.chat.mode.public`,
+      "ask": `${MODULE_ID}.chat.mode.ask`
+    }
+  });
+
+  game.settings.register(MODULE_ID, "allowExtreme", {
+    name: `${MODULE_ID}.settings.allowExtreme.name`,
+    hint: `${MODULE_ID}.settings.allowExtreme.hint`,
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+
   game.settings.register(MODULE_ID, "historyLimit", {
     name: `${MODULE_ID}.settings.historyLimit.name`,
     hint: `${MODULE_ID}.settings.historyLimit.hint`,
     scope: "world",
-    config: true,
+    config: false,
     type: String,
     default: "90",
     choices: {
