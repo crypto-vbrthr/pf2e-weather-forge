@@ -34,3 +34,18 @@ Before publishing, update `module.json` with your GitHub repository URL, manifes
 ## License
 
 MIT
+
+
+## v0.4.1 Weather History
+
+- Stores each accepted weather preview as a localized history entry.
+- Groups history by Golarion date and time segment.
+- Adds a configurable history limit: 30, 90, 180, 365 days, or unlimited.
+- History stores localization keys and raw values, not fixed display text, so entries remain translatable.
+- Exposes history API helpers through the module API.
+
+
+## v0.4.1
+
+- Wettergenerierung und Wetterhistorie liegen nun in zwei lokalisierten Reitern innerhalb desselben Fensters.
+- Die Historie nimmt keinen zusätzlichen Platz unterhalb der Generierung mehr ein.

@@ -1,6 +1,7 @@
 import { MODULE_ID, defaultWeatherState } from "./weather-engine.js";
 import { PF2eWeatherForgeApp } from "./weather-app.js";
 import { defaultCalendarState, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate } from "./calendar-engine.js";
+import { defaultWeatherHistory, getWeatherHistory, setWeatherHistory, clearWeatherHistory } from "./history-engine.js";
 
 let weatherForgeApp;
 
@@ -77,6 +78,31 @@ Hooks.once("init", () => {
     type: Object,
     default: defaultCalendarState()
   });
+
+  game.settings.register(MODULE_ID, "weatherHistory", {
+    name: `${MODULE_ID}.settings.weatherHistory.name`,
+    hint: `${MODULE_ID}.settings.weatherHistory.hint`,
+    scope: "world",
+    config: false,
+    type: Object,
+    default: defaultWeatherHistory()
+  });
+
+  game.settings.register(MODULE_ID, "historyLimit", {
+    name: `${MODULE_ID}.settings.historyLimit.name`,
+    hint: `${MODULE_ID}.settings.historyLimit.hint`,
+    scope: "world",
+    config: true,
+    type: String,
+    default: "90",
+    choices: {
+      "30": `${MODULE_ID}.settings.historyLimit.30`,
+      "90": `${MODULE_ID}.settings.historyLimit.90`,
+      "180": `${MODULE_ID}.settings.historyLimit.180`,
+      "365": `${MODULE_ID}.settings.historyLimit.365`,
+      "unlimited": `${MODULE_ID}.settings.historyLimit.unlimited`
+    }
+  });
 });
 
 Hooks.on("getSceneControlButtons", addWeatherForgeSceneControl);
@@ -91,7 +117,10 @@ Hooks.once("ready", () => {
     nextTime: async () => setCalendarState(advanceTimeSegment(await getCalendarState())),
     previousTime: async () => setCalendarState(rewindTimeSegment(await getCalendarState())),
     nextDay: async () => setCalendarState(advanceCalendarDate(await getCalendarState(), 1)),
-    previousDay: async () => setCalendarState(advanceCalendarDate(await getCalendarState(), -1))
+    previousDay: async () => setCalendarState(advanceCalendarDate(await getCalendarState(), -1)),
+    getHistory: getWeatherHistory,
+    setHistory: setWeatherHistory,
+    clearHistory: clearWeatherHistory
   };
 
   console.log(`${MODULE_ID} | Ready`);

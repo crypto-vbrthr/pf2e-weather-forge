@@ -1,5 +1,6 @@
 import { MODULE_ID, CLIMATE_ZONES, TIME_SEGMENTS, WEEKDAYS, MONTHS, MONTH_LENGTHS, defaultWeatherState, createInitialWeatherState, generateNextWeather } from "./weather-engine.js";
 import { MOON_PHASES, applyCalendarToWeather, calendarFromFormData, extractCalendarFromWeather, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, normalizeCalendarState } from "./calendar-engine.js";
+import { appendWeatherHistory, clearWeatherHistory, getWeatherHistory, historyDescriptorKey } from "./history-engine.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -25,7 +26,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       nextTime: PF2eWeatherForgeApp.#onNextTime,
       previousTime: PF2eWeatherForgeApp.#onPreviousTime,
       nextDay: PF2eWeatherForgeApp.#onNextDay,
-      previousDay: PF2eWeatherForgeApp.#onPreviousDay
+      previousDay: PF2eWeatherForgeApp.#onPreviousDay,
+      clearHistory: PF2eWeatherForgeApp.#onClearHistory
     }
   };
 
@@ -70,7 +72,74 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       extremeTypes: ["storm", "heatwave", "coldSnap", "fog", "blizzard"].map(key => ({
         key,
         label: game.i18n.localize(`${MODULE_ID}.extreme.${key}`)
-      }))
+      })),
+      history: this.#prepareHistory(getWeatherHistory())
+    };
+  }
+
+
+
+  #prepareHistory(entries) {
+    const groups = new Map();
+    for (const entry of entries ?? []) {
+      const dateKey = entry.dateKey ?? `${entry.year}-${entry.month}-${entry.dayOfMonth}`;
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, {
+          dateKey,
+          year: entry.year,
+          month: entry.month,
+          dayOfMonth: entry.dayOfMonth,
+          weekday: entry.weekday,
+          season: entry.season,
+          moonPhase: entry.moonPhase,
+          entries: []
+        });
+      }
+      groups.get(dateKey).entries.push(this.#prepareHistoryEntry(entry));
+    }
+
+    const prepared = [...groups.values()].reverse().map(group => {
+      const latest = group.entries[group.entries.length - 1];
+      return {
+        ...group,
+        weekdayLabel: game.i18n.localize(`${MODULE_ID}.weekday.${group.weekday}`),
+        monthLabel: game.i18n.localize(`${MODULE_ID}.month.${group.month}`),
+        seasonLabel: game.i18n.localize(`${MODULE_ID}.season.${group.season}`),
+        moonPhaseLabel: game.i18n.localize(`${MODULE_ID}.moon.${group.moonPhase}`),
+        summary: latest
+          ? `${latest.precipitationLabel}, ${latest.temperature} °C, ${latest.windStrengthDescription}`
+          : game.i18n.localize(`${MODULE_ID}.history.noEntries`),
+        entries: [...group.entries].reverse()
+      };
+    });
+
+    return {
+      count: entries?.length ?? 0,
+      hasEntries: (entries?.length ?? 0) > 0,
+      groups: prepared
+    };
+  }
+
+  #prepareHistoryEntry(entry) {
+    const humidityDescription = game.i18n.localize(`${MODULE_ID}.humidity.${historyDescriptorKey("humidity", entry.humidity ?? 0)}`);
+    const cloudDensityDescription = game.i18n.localize(`${MODULE_ID}.cloudDensity.${historyDescriptorKey("cloudDensity", entry.cloudDensity ?? 0)}`);
+    const windStrengthDescription = game.i18n.localize(`${MODULE_ID}.windStrength.${historyDescriptorKey("windStrength", entry.windStrength ?? 0)}`);
+    return {
+      ...entry,
+      timeSegmentLabel: game.i18n.localize(`${MODULE_ID}.time.${entry.timeSegment}`),
+      climateZoneLabel: game.i18n.localize(`${MODULE_ID}.climate.${entry.climateZone}`),
+      precipitationLabel: game.i18n.localize(`${MODULE_ID}.precipitation.${entry.precipitation}`),
+      humidityDescription,
+      cloudDensityDescription,
+      windStrengthDescription,
+      trendLabel: game.i18n.localize(`${MODULE_ID}.trend.${entry.trend ?? "stable"}`),
+      description: game.i18n.localize(`${MODULE_ID}.${entry.descriptionKey ?? "description.clearMild"}`),
+      extremeLabel: entry.extremeWeather
+        ? `${game.i18n.localize(`${MODULE_ID}.extreme.${entry.extremeWeather.type}`)} · ${game.i18n.localize(`${MODULE_ID}.extremePhase.${entry.extremeWeather.phase ?? "active"}`)}`
+        : game.i18n.localize(`${MODULE_ID}.extreme.none`),
+      humidityText: `${entry.humidity} % · ${humidityDescription}`,
+      cloudDensityText: `${entry.cloudDensity} % · ${cloudDensityDescription}`,
+      windStrengthText: `${entry.windStrength} · ${windStrengthDescription}`
     };
   }
 
@@ -158,6 +227,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const preview = game.settings.get(MODULE_ID, "weatherPreview");
     if (!preview) return;
     await game.settings.set(MODULE_ID, "weatherState", preview);
+    await appendWeatherHistory(preview);
     await setCalendarState(extractCalendarFromWeather(preview));
     await game.settings.set(MODULE_ID, "weatherPreview", null);
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.weatherAccepted`));
@@ -225,6 +295,13 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const calendar = advanceCalendarDate(baseCalendar, -1);
     await setCalendarState(calendar);
     await PF2eWeatherForgeApp.#syncCalendarToWeather(calendar);
+    this.render();
+  }
+
+  static async #onClearHistory(event) {
+    event.preventDefault();
+    await clearWeatherHistory();
+    ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.historyCleared`));
     this.render();
   }
 }
