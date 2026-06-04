@@ -260,13 +260,17 @@
 }
 
 #weather-forge-tab-generator:checked ~ .weather-tabs label[for="weather-forge-tab-generator"],
-#weather-forge-tab-history:checked ~ .weather-tabs label[for="weather-forge-tab-history"] {
+#weather-forge-tab-forecast:checked ~ .weather-tabs label[for="weather-forge-tab-forecast"],
+#weather-forge-tab-history:checked ~ .weather-tabs label[for="weather-forge-tab-history"],
+#weather-forge-tab-settings:checked ~ .weather-tabs label[for="weather-forge-tab-settings"] {
   background: rgba(255, 255, 255, 0.14);
   box-shadow: inset 0 -2px 0 currentColor;
 }
 
 #weather-forge-tab-generator:checked ~ .weather-generator-tab,
-#weather-forge-tab-history:checked ~ .weather-history-tab {
+#weather-forge-tab-forecast:checked ~ .weather-forecast-tab,
+#weather-forge-tab-history:checked ~ .weather-history-tab,
+#weather-forge-tab-settings:checked ~ .weather-settings-tab {
   display: block;
 }
 
@@ -357,4 +361,48 @@
   .settings-tab-grid {
     grid-template-columns: 1fr;
   }
+}
+
+#weather-forge-tab-generator:checked ~ .weather-generator-tab,
+#weather-forge-tab-forecast:checked ~ .weather-forecast-tab,
+#weather-forge-tab-history:checked ~ .weather-history-tab,
+#weather-forge-tab-settings:checked ~ .weather-settings-tab {
+  display: block;
+}
+
+.forecast-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.forecast-card {
+  border: 1px solid var(--color-border-light-tertiary, #b8a98c);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.forecast-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.forecast-main {
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.forecast-hint {
+  font-style: italic;
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+.pf2e-weather-forge-forecast-card .forecast-chat-entry {
+  border-top: 1px solid rgba(0,0,0,0.2);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
 }

@@ -1,15 +1,98 @@
 import { MODULE_ID, CLIMATE_ZONES, TIME_SEGMENTS, WEEKDAYS, MONTHS, MONTH_LENGTHS, defaultWeatherState, createInitialWeatherState, generateNextWeather } from "./weather-engine.js";
 import { MOON_PHASES, applyCalendarToWeather, calendarFromFormData, extractCalendarFromWeather, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, normalizeCalendarState } from "./calendar-engine.js";
 import { HISTORY_LIMITS, appendWeatherHistory, clearWeatherHistory, getHistoryLimit, getWeatherHistory, historyDescriptorKey } from "./history-engine.js";
+import { FORECAST_DAYS, defaultForecastState, forecastDescriptorKey, forecastDriverKey, generateForecast, getForecastState, setForecastState } from "./forecast-engine.js";
+import { weatherForgeLocalize } from "./localization.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
+const TEMPLATE_LABEL_KEYS = [
+  ["chat_defaultMode", "pf2e-weather-forge.chat.defaultMode"],
+  ["chat_publishGM", "pf2e-weather-forge.chat.publishGM"],
+  ["chat_publishPublic", "pf2e-weather-forge.chat.publishPublic"],
+  ["chat_publishTitle", "pf2e-weather-forge.chat.publishTitle"],
+  ["field_climateZone", "pf2e-weather-forge.field.climateZone"],
+  ["field_cloudDensity", "pf2e-weather-forge.field.cloudDensity"],
+  ["field_dailyMinMax", "pf2e-weather-forge.field.dailyMinMax"],
+  ["field_dayOfMonth", "pf2e-weather-forge.field.dayOfMonth"],
+  ["field_extremeWeather", "pf2e-weather-forge.field.extremeWeather"],
+  ["field_humidity", "pf2e-weather-forge.field.humidity"],
+  ["field_month", "pf2e-weather-forge.field.month"],
+  ["field_moonPhase", "pf2e-weather-forge.field.moonPhase"],
+  ["field_precipitation", "pf2e-weather-forge.field.precipitation"],
+  ["field_temperature", "pf2e-weather-forge.field.temperature"],
+  ["field_timeSegment", "pf2e-weather-forge.field.timeSegment"],
+  ["field_trend", "pf2e-weather-forge.field.trend"],
+  ["field_weekday", "pf2e-weather-forge.field.weekday"],
+  ["field_windStrength", "pf2e-weather-forge.field.windStrength"],
+  ["field_year", "pf2e-weather-forge.field.year"],
+  ["forecast_days_label", "pf2e-weather-forge.forecast.days.label"],
+  ["forecast_empty", "pf2e-weather-forge.forecast.empty"],
+  ["forecast_field_confidence", "pf2e-weather-forge.forecast.field.confidence"],
+  ["forecast_field_driver", "pf2e-weather-forge.forecast.field.driver"],
+  ["forecast_field_rainRisk", "pf2e-weather-forge.forecast.field.rainRisk"],
+  ["forecast_field_stormRisk", "pf2e-weather-forge.forecast.field.stormRisk"],
+  ["forecast_field_temperatureRange", "pf2e-weather-forge.forecast.field.temperatureRange"],
+  ["forecast_field_trend", "pf2e-weather-forge.forecast.field.trend"],
+  ["forecast_generate", "pf2e-weather-forge.forecast.generate"],
+  ["forecast_hint", "pf2e-weather-forge.forecast.hint"],
+  ["forecast_publishGM", "pf2e-weather-forge.forecast.publishGM"],
+  ["forecast_title", "pf2e-weather-forge.forecast.title"],
+  ["history_clear", "pf2e-weather-forge.history.clear"],
+  ["history_empty", "pf2e-weather-forge.history.empty"],
+  ["history_hint", "pf2e-weather-forge.history.hint"],
+  ["history_title", "pf2e-weather-forge.history.title"],
+  ["settings_historyLimit_name", "pf2e-weather-forge.settings.historyLimit.name"],
+  ["settingsTab_calendarTitle", "pf2e-weather-forge.settingsTab.calendarTitle"],
+  ["settingsTab_climateTitle", "pf2e-weather-forge.settingsTab.climateTitle"],
+  ["settingsTab_outputTitle", "pf2e-weather-forge.settingsTab.outputTitle"],
+  ["settingsTab_save", "pf2e-weather-forge.settingsTab.save"],
+  ["tabs_forecast", "pf2e-weather-forge.tabs.forecast"],
+  ["tabs_generator", "pf2e-weather-forge.tabs.generator"],
+  ["tabs_history", "pf2e-weather-forge.tabs.history"],
+  ["tabs_label", "pf2e-weather-forge.tabs.label"],
+  ["tabs_settings", "pf2e-weather-forge.tabs.settings"],
+  ["ui_accept", "pf2e-weather-forge.ui.accept"],
+  ["ui_allowExtreme", "pf2e-weather-forge.ui.allowExtreme"],
+  ["ui_climateZone", "pf2e-weather-forge.ui.climateZone"],
+  ["ui_currentWeather", "pf2e-weather-forge.ui.currentWeather"],
+  ["ui_extremeType", "pf2e-weather-forge.ui.extremeType"],
+  ["ui_forceExtreme", "pf2e-weather-forge.ui.forceExtreme"],
+  ["ui_generate", "pf2e-weather-forge.ui.generate"],
+  ["ui_nextDay", "pf2e-weather-forge.ui.nextDay"],
+  ["ui_nextTime", "pf2e-weather-forge.ui.nextTime"],
+  ["ui_noPreview", "pf2e-weather-forge.ui.noPreview"],
+  ["ui_preview", "pf2e-weather-forge.ui.preview"],
+  ["ui_previousDay", "pf2e-weather-forge.ui.previousDay"],
+  ["ui_previousTime", "pf2e-weather-forge.ui.previousTime"],
+  ["ui_reset", "pf2e-weather-forge.ui.reset"],
+  ["ui_saveCalendar", "pf2e-weather-forge.ui.saveCalendar"],
+  ["ui_settingsMovedHint", "pf2e-weather-forge.ui.settingsMovedHint"],
+  ["ui_weatherGeneration", "pf2e-weather-forge.ui.weatherGeneration"],
+];
+
+function buildTemplateLabels() {
+  return Object.fromEntries(TEMPLATE_LABEL_KEYS.map(([name, key]) => [name, weatherForgeLocalize(MODULE_ID, key)]));
+}
+
 export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV2) {
+  constructor(options = {}) {
+    super(foundry.utils.mergeObject({
+      window: { title: game.i18n.localize(`${MODULE_ID}.app.title`) }
+    }, options, { inplace: false }));
+    this.activeTab = options.activeTab ?? "generator";
+    try {
+      const localizedTitle = game.i18n.localize(`${MODULE_ID}.app.title`);
+      this.options.window.title = localizedTitle;
+      if (this.window) this.window.title = localizedTitle;
+    } catch (_) {}
+  }
+
   static DEFAULT_OPTIONS = {
     id: "pf2e-weather-forge-app",
     tag: "form",
     window: {
-      title: `${MODULE_ID}.app.title`,
+      title: "PF2e Weather Forge",
       icon: "fa-solid fa-cloud-sun-rain",
       resizable: true
     },
@@ -30,7 +113,9 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       clearHistory: PF2eWeatherForgeApp.#onClearHistory,
       saveSettings: PF2eWeatherForgeApp.#onSaveSettings,
       publishGM: PF2eWeatherForgeApp.#onPublishGM,
-      publishPublic: PF2eWeatherForgeApp.#onPublishPublic
+      publishPublic: PF2eWeatherForgeApp.#onPublishPublic,
+      generateForecast: PF2eWeatherForgeApp.#onGenerateForecast,
+      publishForecastGM: PF2eWeatherForgeApp.#onPublishForecastGM
     }
   };
 
@@ -46,8 +131,19 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const storedPreview = game.settings.get(MODULE_ID, "weatherPreview") ?? null;
     const current = applyCalendarToWeather(storedCurrent, calendar);
     const preview = storedPreview ? storedPreview : null;
+    const forecast = getForecastState();
+
+    const activeTab = ["generator", "forecast", "history", "settings"].includes(this.activeTab) ? this.activeTab : "generator";
 
     return {
+      labels: buildTemplateLabels(),
+      activeTab,
+      activeTabs: {
+        generator: activeTab === "generator",
+        forecast: activeTab === "forecast",
+        history: activeTab === "history",
+        settings: activeTab === "settings"
+      },
       current: this.#prepareWeather(current),
       preview: preview ? this.#prepareWeather(preview) : null,
       calendar: this.#prepareCalendar(calendar),
@@ -77,6 +173,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
         label: game.i18n.localize(`${MODULE_ID}.extreme.${key}`)
       })),
       history: this.#prepareHistory(getWeatherHistory()),
+      forecast: this.#prepareForecast(forecast),
       appSettings: this.#prepareSettings(current)
     };
   }
@@ -85,8 +182,14 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const configuredLimit = getHistoryLimit();
     const chatMode = game.settings.get(MODULE_ID, "chatOutputMode") ?? "gm";
     const allowExtreme = game.settings.get(MODULE_ID, "allowExtreme") ?? true;
+    const forecastDays = String(game.settings.get(MODULE_ID, "forecastDays") ?? "3");
     return {
       allowExtreme,
+      forecastDays: FORECAST_DAYS.map(key => ({
+        key,
+        label: game.i18n.localize(`${MODULE_ID}.forecast.days.${key}`),
+        selected: key === forecastDays
+      })),
       chatModes: ["gm", "public", "ask"].map(key => ({
         key,
         label: game.i18n.localize(`${MODULE_ID}.chat.mode.${key}`),
@@ -98,6 +201,30 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
         selected: key === configuredLimit
       })),
       currentClimateZone: current.climateZone
+    };
+  }
+
+
+  #prepareForecast(forecast) {
+    const entries = forecast?.entries ?? [];
+    return {
+      hasEntries: entries.length > 0,
+      days: forecast?.days ?? 3,
+      generatedFrom: forecast?.generatedFrom ?? null,
+      entries: entries.map(entry => ({
+        ...entry,
+        weekdayLabel: game.i18n.localize(`${MODULE_ID}.weekday.${entry.calendar?.weekday}`),
+        monthLabel: game.i18n.localize(`${MODULE_ID}.month.${entry.calendar?.month}`),
+        seasonLabel: game.i18n.localize(`${MODULE_ID}.season.${entry.calendar?.season}`),
+        trendLabel: game.i18n.localize(`${MODULE_ID}.trend.${entry.trend ?? "stable"}`),
+        weatherLabel: game.i18n.localize(`${MODULE_ID}.forecast.weather.${forecastDescriptorKey(entry)}`),
+        driverLabel: game.i18n.localize(`${MODULE_ID}.forecast.driver.${forecastDriverKey(entry)}`),
+        temperatureRange: `${entry.minTemp} – ${entry.maxTemp} °C`,
+        rainRiskLabel: `${entry.rainRisk} %`,
+        stormRiskLabel: `${entry.stormRisk} %`,
+        confidenceLabel: `${entry.confidence} %`,
+        gmHint: game.i18n.localize(`${MODULE_ID}.forecast.hint.${forecastDriverKey(entry)}`)
+      }))
     };
   }
 
@@ -223,6 +350,13 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     };
   }
 
+  static #rememberActiveTab(app, target, fallback = null) {
+    const form = target?.closest?.("form") ?? app?.element ?? null;
+    const checked = form?.querySelector?.('input[name="weatherForgeTab"]:checked');
+    const tab = checked?.value ?? fallback ?? app?.activeTab ?? "generator";
+    app.activeTab = ["generator", "forecast", "history", "settings"].includes(tab) ? tab : "generator";
+  }
+
   static async #syncCalendarToWeather(calendar) {
     const current = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
     await game.settings.set(MODULE_ID, "weatherState", applyCalendarToWeather(current, calendar));
@@ -231,6 +365,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onGenerate(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "generator");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
     const calendar = await setCalendarState(calendarFromFormData(fd));
@@ -240,7 +375,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       climateZone: fd.get("climateZone"),
       allowExtreme: fd.get("allowExtreme") === "on",
       forceExtreme: fd.get("forceExtreme") === "on",
-      extremeType: fd.get("extremeType")
+      extremeType: fd.get("extremeType"),
+      forecast: getForecastState()
     });
     await game.settings.set(MODULE_ID, "weatherPreview", preview);
     this.render();
@@ -248,6 +384,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onAccept(event) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, null, "generator");
     const preview = game.settings.get(MODULE_ID, "weatherPreview");
     if (!preview) return;
     await game.settings.set(MODULE_ID, "weatherState", preview);
@@ -260,6 +397,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onReset(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "generator");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
     const climateZone = fd.get("climateZone") || "temperate";
@@ -273,6 +411,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onSaveCalendar(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
     const calendar = calendarFromFormData(fd);
@@ -290,6 +429,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onNextTime(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = advanceTimeSegment(baseCalendar);
     await setCalendarState(calendar);
@@ -299,6 +439,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onPreviousTime(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = rewindTimeSegment(baseCalendar);
     await setCalendarState(calendar);
@@ -308,6 +449,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onNextDay(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = advanceCalendarDate(baseCalendar, 1);
     await setCalendarState(calendar);
@@ -317,6 +459,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onPreviousDay(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = advanceCalendarDate(baseCalendar, -1);
     await setCalendarState(calendar);
@@ -326,6 +469,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onClearHistory(event) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, null, "history");
     await clearWeatherHistory();
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.historyCleared`));
     this.render();
@@ -338,10 +482,13 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const chatOutputMode = String(fd.get("chatOutputMode") ?? game.settings.get(MODULE_ID, "chatOutputMode") ?? "gm");
     if (["gm", "public", "ask"].includes(chatOutputMode)) await game.settings.set(MODULE_ID, "chatOutputMode", chatOutputMode);
     await game.settings.set(MODULE_ID, "allowExtreme", fd.get("allowExtreme") === "on");
+    const forecastDays = String(fd.get("forecastDays") ?? game.settings.get(MODULE_ID, "forecastDays") ?? "3");
+    if (FORECAST_DAYS.includes(forecastDays)) await game.settings.set(MODULE_ID, "forecastDays", forecastDays);
   }
 
   static async #onSaveSettings(event, target) {
     event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
     await setCalendarState(calendarFromFormData(fd));
@@ -358,6 +505,34 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onPublishPublic(event) {
     event.preventDefault();
     await PF2eWeatherForgeApp.#publishWeather("public");
+  }
+
+
+  static async #onGenerateForecast(event, target) {
+    event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "forecast");
+    const form = target.closest("form") ?? this.element;
+    const fd = new FormData(form);
+    await PF2eWeatherForgeApp.#persistUiSettings(fd);
+    const calendar = await setCalendarState(calendarFromFormData(fd));
+    const current = applyCalendarToWeather(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), calendar);
+    const days = Number(fd.get("forecastDays") ?? game.settings.get(MODULE_ID, "forecastDays") ?? 3);
+    const forecast = generateForecast(current, days);
+    await setForecastState(forecast);
+    ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.forecastGenerated`));
+    this.render();
+  }
+
+  static async #onPublishForecastGM(event) {
+    event.preventDefault();
+    const forecast = getForecastState();
+    if (!forecast?.entries?.length) return ui.notifications.warn(game.i18n.localize(`${MODULE_ID}.notification.noForecast`));
+    const content = PF2eWeatherForgeApp.#buildForecastChatCard(forecast);
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ alias: game.i18n.localize(`${MODULE_ID}.chat.speaker`) }),
+      content,
+      whisper: ChatMessage.getWhisperRecipients("GM").map(user => user.id)
+    });
   }
 
   static async #publishWeather(mode = "gm") {
@@ -444,6 +619,37 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
         <p class="weather-chat-description">${e(w.description)}</p>
         <dl>${rows}</dl>
       </article>`;
+  }
+
+
+  static #buildForecastChatCard(forecast) {
+    const e = foundry.utils.escapeHTML;
+    const title = game.i18n.localize(`${MODULE_ID}.forecast.chatTitle`);
+    const rows = (forecast.entries ?? []).map(entry => {
+      const date = `${game.i18n.localize(`${MODULE_ID}.weekday.${entry.calendar?.weekday}`)}, ${entry.calendar?.dayOfMonth}. ${game.i18n.localize(`${MODULE_ID}.month.${entry.calendar?.month}`)} ${entry.calendar?.year}`;
+      const weather = game.i18n.localize(`${MODULE_ID}.forecast.weather.${forecastDescriptorKey(entry)}`);
+      const driver = game.i18n.localize(`${MODULE_ID}.forecast.driver.${forecastDriverKey(entry)}`);
+      const trend = game.i18n.localize(`${MODULE_ID}.trend.${entry.trend ?? "stable"}`);
+      const hint = game.i18n.localize(`${MODULE_ID}.forecast.hint.${forecastDriverKey(entry)}`);
+      return `<article class="forecast-chat-entry">
+        <h3>${e(date)}</h3>
+        <dl>
+          <dt>${e(game.i18n.localize(`${MODULE_ID}.forecast.field.expected`))}</dt><dd>${e(weather)}</dd>
+          <dt>${e(game.i18n.localize(`${MODULE_ID}.forecast.field.temperatureRange`))}</dt><dd>${e(`${entry.minTemp} – ${entry.maxTemp} °C`)}</dd>
+          <dt>${e(game.i18n.localize(`${MODULE_ID}.forecast.field.rainRisk`))}</dt><dd>${e(`${entry.rainRisk} %`)}</dd>
+          <dt>${e(game.i18n.localize(`${MODULE_ID}.forecast.field.stormRisk`))}</dt><dd>${e(`${entry.stormRisk} %`)}</dd>
+          <dt>${e(game.i18n.localize(`${MODULE_ID}.forecast.field.confidence`))}</dt><dd>${e(`${entry.confidence} %`)}</dd>
+          <dt>${e(game.i18n.localize(`${MODULE_ID}.forecast.field.trend`))}</dt><dd>${e(trend)}</dd>
+          <dt>${e(game.i18n.localize(`${MODULE_ID}.forecast.field.driver`))}</dt><dd>${e(driver)}</dd>
+        </dl>
+        <p>${e(hint)}</p>
+      </article>`;
+    }).join("");
+    return `<article class="pf2e-weather-forge-chat-card pf2e-weather-forge-forecast-card">
+      <h2><i class="fas fa-chart-line"></i> ${e(title)}</h2>
+      <p>${e(game.i18n.localize(`${MODULE_ID}.forecast.chatHint`))}</p>
+      ${rows}
+    </article>`;
   }
 
 }

@@ -2,10 +2,137 @@ import { MODULE_ID, defaultWeatherState } from "./weather-engine.js";
 import { PF2eWeatherForgeApp } from "./weather-app.js";
 import { defaultCalendarState, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate } from "./calendar-engine.js";
 import { defaultWeatherHistory, getWeatherHistory, setWeatherHistory, clearWeatherHistory } from "./history-engine.js";
+import { defaultForecastState, generateForecast, getForecastState, setForecastState } from "./forecast-engine.js";
+import { installWeatherForgeLocalizationFallback, weatherForgeLocalize, weatherForgeFormat } from "./localization.js";
+
+
+function isSettingRegistered(key) {
+  return game.settings?.settings?.has(`${MODULE_ID}.${key}`) ?? false;
+}
+
+function registerWeatherForgeSettings() {
+  if (!isSettingRegistered("weatherState")) {
+    game.settings.register(MODULE_ID, "weatherState", {
+      name: `${MODULE_ID}.settings.weatherState.name`,
+      hint: `${MODULE_ID}.settings.weatherState.hint`,
+      scope: "world",
+      config: false,
+      type: Object,
+      default: defaultWeatherState()
+    });
+  }
+
+  if (!isSettingRegistered("weatherPreview")) {
+    game.settings.register(MODULE_ID, "weatherPreview", {
+      name: `${MODULE_ID}.settings.weatherPreview.name`,
+      hint: `${MODULE_ID}.settings.weatherPreview.hint`,
+      scope: "world",
+      config: false,
+      type: Object,
+      default: null
+    });
+  }
+
+  if (!isSettingRegistered("calendarState")) {
+    game.settings.register(MODULE_ID, "calendarState", {
+      name: `${MODULE_ID}.settings.calendarState.name`,
+      hint: `${MODULE_ID}.settings.calendarState.hint`,
+      scope: "world",
+      config: false,
+      type: Object,
+      default: defaultCalendarState()
+    });
+  }
+
+  if (!isSettingRegistered("weatherHistory")) {
+    game.settings.register(MODULE_ID, "weatherHistory", {
+      name: `${MODULE_ID}.settings.weatherHistory.name`,
+      hint: `${MODULE_ID}.settings.weatherHistory.hint`,
+      scope: "world",
+      config: false,
+      type: Object,
+      default: defaultWeatherHistory()
+    });
+  }
+
+  if (!isSettingRegistered("forecastState")) {
+    game.settings.register(MODULE_ID, "forecastState", {
+      name: `${MODULE_ID}.settings.forecastState.name`,
+      hint: `${MODULE_ID}.settings.forecastState.hint`,
+      scope: "world",
+      config: false,
+      type: Object,
+      default: defaultForecastState()
+    });
+  }
+
+  if (!isSettingRegistered("forecastDays")) {
+    game.settings.register(MODULE_ID, "forecastDays", {
+      name: `${MODULE_ID}.settings.forecastDays.name`,
+      hint: `${MODULE_ID}.settings.forecastDays.hint`,
+      scope: "world",
+      config: false,
+      type: String,
+      default: "3",
+      choices: {
+        "1": `${MODULE_ID}.forecast.days.1`,
+        "3": `${MODULE_ID}.forecast.days.3`,
+        "5": `${MODULE_ID}.forecast.days.5`,
+        "7": `${MODULE_ID}.forecast.days.7`
+      }
+    });
+  }
+
+  if (!isSettingRegistered("chatOutputMode")) {
+    game.settings.register(MODULE_ID, "chatOutputMode", {
+      name: `${MODULE_ID}.settings.chatOutputMode.name`,
+      hint: `${MODULE_ID}.settings.chatOutputMode.hint`,
+      scope: "world",
+      config: false,
+      type: String,
+      default: "gm",
+      choices: {
+        "gm": `${MODULE_ID}.chat.mode.gm`,
+        "public": `${MODULE_ID}.chat.mode.public`,
+        "ask": `${MODULE_ID}.chat.mode.ask`
+      }
+    });
+  }
+
+  if (!isSettingRegistered("allowExtreme")) {
+    game.settings.register(MODULE_ID, "allowExtreme", {
+      name: `${MODULE_ID}.settings.allowExtreme.name`,
+      hint: `${MODULE_ID}.settings.allowExtreme.hint`,
+      scope: "world",
+      config: false,
+      type: Boolean,
+      default: true
+    });
+  }
+
+  if (!isSettingRegistered("historyLimit")) {
+    game.settings.register(MODULE_ID, "historyLimit", {
+      name: `${MODULE_ID}.settings.historyLimit.name`,
+      hint: `${MODULE_ID}.settings.historyLimit.hint`,
+      scope: "world",
+      config: false,
+      type: String,
+      default: "90",
+      choices: {
+        "30": `${MODULE_ID}.settings.historyLimit.30`,
+        "90": `${MODULE_ID}.settings.historyLimit.90`,
+        "180": `${MODULE_ID}.settings.historyLimit.180`,
+        "365": `${MODULE_ID}.settings.historyLimit.365`,
+        "unlimited": `${MODULE_ID}.settings.historyLimit.unlimited`
+      }
+    });
+  }
+}
 
 let weatherForgeApp;
 
 function openWeatherForge() {
+  registerWeatherForgeSettings();
   weatherForgeApp ??= new PF2eWeatherForgeApp();
   weatherForgeApp.render(true);
   return weatherForgeApp;
@@ -52,82 +179,20 @@ function addWeatherForgeSceneControl(controls) {
 }
 
 Hooks.once("init", () => {
-  game.settings.register(MODULE_ID, "weatherState", {
-    name: `${MODULE_ID}.settings.weatherState.name`,
-    hint: `${MODULE_ID}.settings.weatherState.hint`,
-    scope: "world",
-    config: false,
-    type: Object,
-    default: defaultWeatherState()
-  });
+  installWeatherForgeLocalizationFallback(MODULE_ID);
 
-  game.settings.register(MODULE_ID, "weatherPreview", {
-    name: `${MODULE_ID}.settings.weatherPreview.name`,
-    hint: `${MODULE_ID}.settings.weatherPreview.hint`,
-    scope: "world",
-    config: false,
-    type: Object,
-    default: null
-  });
+  // Foundry registers the built-in Handlebars localize helper early. In some
+  // versions it keeps a reference to the original i18n function, so our fallback
+  // would not be used inside templates. Re-registering the helper here makes
+  // template localization use the patched game.i18n.localize as well.
+  try {
+    Handlebars.registerHelper("wf", (key) => weatherForgeLocalize(MODULE_ID, key));
+    Handlebars.registerHelper("wff", (key, options) => weatherForgeFormat(MODULE_ID, key, options?.hash ?? {}));
+  } catch (error) {
+    console.warn(`${MODULE_ID} | Could not register Weather Forge localization helpers`, error);
+  }
 
-  game.settings.register(MODULE_ID, "calendarState", {
-    name: `${MODULE_ID}.settings.calendarState.name`,
-    hint: `${MODULE_ID}.settings.calendarState.hint`,
-    scope: "world",
-    config: false,
-    type: Object,
-    default: defaultCalendarState()
-  });
-
-  game.settings.register(MODULE_ID, "weatherHistory", {
-    name: `${MODULE_ID}.settings.weatherHistory.name`,
-    hint: `${MODULE_ID}.settings.weatherHistory.hint`,
-    scope: "world",
-    config: false,
-    type: Object,
-    default: defaultWeatherHistory()
-  });
-
-
-
-  game.settings.register(MODULE_ID, "chatOutputMode", {
-    name: `${MODULE_ID}.settings.chatOutputMode.name`,
-    hint: `${MODULE_ID}.settings.chatOutputMode.hint`,
-    scope: "world",
-    config: false,
-    type: String,
-    default: "gm",
-    choices: {
-      "gm": `${MODULE_ID}.chat.mode.gm`,
-      "public": `${MODULE_ID}.chat.mode.public`,
-      "ask": `${MODULE_ID}.chat.mode.ask`
-    }
-  });
-
-  game.settings.register(MODULE_ID, "allowExtreme", {
-    name: `${MODULE_ID}.settings.allowExtreme.name`,
-    hint: `${MODULE_ID}.settings.allowExtreme.hint`,
-    scope: "world",
-    config: false,
-    type: Boolean,
-    default: true
-  });
-
-  game.settings.register(MODULE_ID, "historyLimit", {
-    name: `${MODULE_ID}.settings.historyLimit.name`,
-    hint: `${MODULE_ID}.settings.historyLimit.hint`,
-    scope: "world",
-    config: false,
-    type: String,
-    default: "90",
-    choices: {
-      "30": `${MODULE_ID}.settings.historyLimit.30`,
-      "90": `${MODULE_ID}.settings.historyLimit.90`,
-      "180": `${MODULE_ID}.settings.historyLimit.180`,
-      "365": `${MODULE_ID}.settings.historyLimit.365`,
-      "unlimited": `${MODULE_ID}.settings.historyLimit.unlimited`
-    }
-  });
+  registerWeatherForgeSettings();
 });
 
 Hooks.on("getSceneControlButtons", addWeatherForgeSceneControl);
@@ -145,7 +210,14 @@ Hooks.once("ready", () => {
     previousDay: async () => setCalendarState(advanceCalendarDate(await getCalendarState(), -1)),
     getHistory: getWeatherHistory,
     setHistory: setWeatherHistory,
-    clearHistory: clearWeatherHistory
+    clearHistory: clearWeatherHistory,
+    getForecast: getForecastState,
+    setForecast: setForecastState,
+    generateForecast: async (days = 3) => {
+      const forecast = generateForecast(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), days);
+      await setForecastState(forecast);
+      return forecast;
+    }
   };
 
   console.log(`${MODULE_ID} | Ready`);

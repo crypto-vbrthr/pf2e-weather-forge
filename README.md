@@ -59,7 +59,22 @@ MIT
 - Keeps history entries localization-friendly by continuing to store keys and raw values.
 
 
-## v0.5.1
+## v0.6.2
 
 - Öffentliche ChatCards zeigen kein Tagesminimum/-maximum mehr.
 - GM-Whisper enthält weiterhin die vollständigen Wetterdetails.
+
+
+## v0.6.2 - Forecast
+
+- Neuer Reiter **Vorhersage**.
+- 1/3/5/7 Tage Prognose.
+- Regenrisiko, Gewitterrisiko, Temperaturspanne und Verlässlichkeit.
+- Die spätere Wettergenerierung orientiert sich an der aktiven Vorhersage, bleibt aber plausibel variabel.
+- GM-ChatCard für Vorhersagen.
+- Alle neuen Texte sind DE/EN-lokalisierbar.
+
+
+## 0.6.2
+
+- Hardened settings registration. The app now re-checks and registers missing world settings before opening, preventing errors after partial updates or stale installs.

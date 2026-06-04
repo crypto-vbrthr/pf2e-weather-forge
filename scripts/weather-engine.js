@@ -75,6 +75,7 @@ export function defaultWeatherState() {
     moonPhase: "waxingCrescent",
     season: "spring",
     dailyProfile: null,
+    forecastInfluence: null,
     extremeWeather: null,
     descriptionKey: "description.clearMild"
   };
@@ -311,6 +312,46 @@ function applyExtremeModifiers(weather) {
   return weather;
 }
 
+
+function blendNumber(current, target, strength = 0.75) {
+  return Math.round((Number(current) * (1 - strength)) + (Number(target) * strength));
+}
+
+function applyForecastGuidance(weather, guidance) {
+  if (!guidance) {
+    weather.forecastInfluence = null;
+    return weather;
+  }
+  const strength = clamp(Number(guidance.guidanceStrength ?? 0.75), 0.45, 0.9);
+  weather.forecastInfluence = {
+    dateKey: guidance.dateKey,
+    weatherKey: guidance.weatherKey,
+    confidence: guidance.confidence,
+    rainRisk: guidance.rainRisk,
+    stormRisk: guidance.stormRisk
+  };
+  weather.humidity = clamp(blendNumber(weather.humidity ?? 50, guidance.humidity ?? weather.humidity ?? 50, strength), 0, 100);
+  weather.cloudDensity = clamp(blendNumber(weather.cloudDensity ?? 45, guidance.cloudCover ?? weather.cloudDensity ?? 45, strength), 0, 100);
+  weather.windStrength = clamp(blendNumber(weather.windStrength ?? 2, guidance.wind ?? weather.windStrength ?? 2, Math.min(0.65, strength)), 0, 12);
+
+  if (weather.dailyProfile) {
+    weather.dailyProfile = {
+      ...weather.dailyProfile,
+      minTemp: blendNumber(weather.dailyProfile.minTemp ?? weather.temperature, guidance.minTemp ?? weather.dailyProfile.minTemp ?? weather.temperature, strength),
+      maxTemp: blendNumber(weather.dailyProfile.maxTemp ?? weather.temperature, guidance.maxTemp ?? weather.dailyProfile.maxTemp ?? weather.temperature, strength),
+      trend: guidance.trend ?? weather.dailyProfile.trend,
+      weatherPattern: guidance.weatherKey ?? weather.dailyProfile.weatherPattern
+    };
+  }
+
+  if (!weather.extremeWeather && guidance.driver?.type) {
+    if (guidance.driver.type === "heatwave") weather.extremeWeather = { type: "heatwave", intensity: guidance.driver.strength ?? 1, remainingSegments: randomInt(3, 8), decayChance: 14, phase: "building" };
+    if (guidance.driver.type === "coldSnap") weather.extremeWeather = { type: "coldSnap", intensity: guidance.driver.strength ?? 1, remainingSegments: randomInt(3, 8), decayChance: 14, phase: "building" };
+    if (guidance.driver.type === "blizzard") weather.extremeWeather = { type: "blizzard", intensity: guidance.driver.strength ?? 1, remainingSegments: randomInt(3, 8), decayChance: 14, phase: "building" };
+  }
+  return weather;
+}
+
 function descriptionKeyFor(weather) {
   if (weather.extremeWeather) return `description.extreme.${weather.extremeWeather.type}`;
   if (weather.precipitation === "thunderstorm") return "description.thunderstorm";
@@ -364,9 +405,12 @@ export function generateNextWeather(current, settings = {}) {
   if (shouldAdvanceDate(current.timeSegment, nextSegment)) weather = advanceCalendarDate(weather);
   const newDayStarted = previousDateKey !== dateKey(weather) || weather.dailyProfile?.dateKey !== dateKey(weather);
   weather.dailyProfile = ensureDailyProfile(weather, climate, activeExtreme, newDayStarted ? current.dailyProfile : weather.dailyProfile);
+  const forecastGuidance = (settings.forecast?.entries ?? []).find(entry => entry.dateKey === dateKey(weather));
+  weather = applyForecastGuidance(weather, forecastGuidance);
   weather.temperature = getDailyTemperatureAtSegment(weather.dailyProfile, weather.timeSegment);
 
-  weather.precipitation = choosePrecipitation(climate.rainChance, weather.cloudDensity, weather.extremeWeather, weather);
+  const forecastRainBias = forecastGuidance ? Math.round(((forecastGuidance.rainRisk ?? climate.rainChance) - climate.rainChance) * 0.65) : 0;
+  weather.precipitation = choosePrecipitation(clamp(climate.rainChance + forecastRainBias, 0, 95), weather.cloudDensity, weather.extremeWeather, weather);
   weather = applyExtremeModifiers(weather);
   weather = clampTemperatureForClimate(weather, climate);
   weather.descriptionKey = descriptionKeyFor(weather);
