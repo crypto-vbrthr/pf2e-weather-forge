@@ -11,7 +11,7 @@
     {
       "name": "Your Name",
       "discord": "your-discord-name",
-      "url": "https://github.com/yourname/pf2e-weather-forge"
+      "url": "https://github.com/crypto-vbrthr/pf2e-weather-forge"
     }
   ],
   "esmodules": [
@@ -32,12 +32,12 @@
       "path": "lang/en.json"
     }
   ],
-  "url": "https://github.com/yourname/pf2e-weather-forge",
-  "manifest": "https://raw.githubusercontent.com/yourname/pf2e-weather-forge/main/module.json",
-  "download": "https://github.com/yourname/pf2e-weather-forge/releases/download/v0.6.5/pf2e-weather-forge.zip",
+  "url": "https://github.com/crypto-vbrthr/pf2e-weather-forge",
+  "manifest": "https://raw.githubusercontent.com/crypto-vbrthr/pf2e-weather-forge/main/module.json",
+  "download": "https://github.com/crypto-vbrthr/pf2e-weather-forge/releases/download/v0.6.6/pf2e-weather-forge.zip",
   "license": "MIT",
   "readme": "README.md",
-  "bugs": "https://github.com/yourname/pf2e-weather-forge/issues",
+  "bugs": "https://github.com/crypto-vbrthr/pf2e-weather-forge/issues",
   "relationships": {
     "requires": [],
     "recommends": []
