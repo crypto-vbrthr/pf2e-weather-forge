@@ -217,6 +217,15 @@
           <span>{{labels.ui_allowExtreme}}</span>
         </label>
 
+        <div class="form-group">
+          <label>{{labels.settings_extremeFrequency}}</label>
+          <select name="extremeFrequency">
+            {{#each appSettings.extremeFrequencies}}
+              <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+
         <label class="checkbox-row">
           <input type="checkbox" name="forceExtreme">
           <span>{{labels.ui_forceExtreme}}</span>

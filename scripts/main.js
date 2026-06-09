@@ -110,6 +110,23 @@ function registerWeatherForgeSettings() {
     });
   }
 
+  if (!isSettingRegistered("extremeFrequency")) {
+    game.settings.register(MODULE_ID, "extremeFrequency", {
+      name: `${MODULE_ID}.settings.extremeFrequency.name`,
+      hint: `${MODULE_ID}.settings.extremeFrequency.hint`,
+      scope: "world",
+      config: false,
+      type: String,
+      default: "normal",
+      choices: {
+        "rare": `${MODULE_ID}.settings.extremeFrequency.rare`,
+        "normal": `${MODULE_ID}.settings.extremeFrequency.normal`,
+        "frequent": `${MODULE_ID}.settings.extremeFrequency.frequent`,
+        "veryFrequent": `${MODULE_ID}.settings.extremeFrequency.veryFrequent`
+      }
+    });
+  }
+
   if (!isSettingRegistered("historyLimit")) {
     game.settings.register(MODULE_ID, "historyLimit", {
       name: `${MODULE_ID}.settings.historyLimit.name`,

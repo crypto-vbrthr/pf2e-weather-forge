@@ -1,6 +1,7 @@
 export const MODULE_ID = "pf2e-weather-forge";
 
 export const TIME_SEGMENTS = ["morning", "noon", "afternoon", "evening", "night"];
+export const EXTREME_FREQUENCIES = ["rare", "normal", "frequent", "veryFrequent"];
 
 export const WEEKDAYS = ["moonday", "toilday", "wealday", "oathday", "fireday", "starday", "sunday"];
 export const MONTHS = ["abadius", "calistril", "pharast", "gozran", "desnus", "sarenith", "erastus", "arodus", "rova", "lamashan", "neth", "kuthona"];
@@ -246,8 +247,11 @@ function maybeStartExtremeWeather(climate, settings, weather = {}) {
   }
   if (!settings.allowExtreme) return null;
   let chance = climate.extremeChance;
+  const frequency = settings.extremeFrequency || "normal";
+  const frequencyMultiplier = { rare: 0.5, normal: 1, frequent: 1.8, veryFrequent: 3 }[frequency] ?? 1;
   if (["afternoon", "evening"].includes(weather.timeSegment)) chance += 2;
   if (weather.cloudDensity > 85) chance += 2;
+  chance = clamp(Math.round(chance * frequencyMultiplier), 0, 45);
   if (randomInt(1, 100) <= chance) {
     const candidates = ["storm", "heatwave", "coldSnap", "fog", "blizzard"];
     const type = candidates[randomInt(0, candidates.length - 1)];

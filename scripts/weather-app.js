@@ -1,4 +1,4 @@
-import { MODULE_ID, CLIMATE_ZONES, TIME_SEGMENTS, WEEKDAYS, MONTHS, MONTH_LENGTHS, defaultWeatherState, createInitialWeatherState, generateNextWeather } from "./weather-engine.js";
+import { MODULE_ID, CLIMATE_ZONES, TIME_SEGMENTS, WEEKDAYS, MONTHS, MONTH_LENGTHS, EXTREME_FREQUENCIES, defaultWeatherState, createInitialWeatherState, generateNextWeather } from "./weather-engine.js";
 import { MOON_PHASES, applyCalendarToWeather, calendarFromFormData, extractCalendarFromWeather, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, normalizeCalendarState } from "./calendar-engine.js";
 import { HISTORY_LIMITS, appendWeatherHistory, clearWeatherHistory, getHistoryLimit, getWeatherHistory, historyDescriptorKey } from "./history-engine.js";
 import { FORECAST_DAYS, defaultForecastState, forecastDescriptorKey, forecastDriverKey, generateForecast, getForecastState, setForecastState } from "./forecast-engine.js";
@@ -16,6 +16,7 @@ const TEMPLATE_LABEL_KEYS = [
   ["field_dailyMinMax", "pf2e-weather-forge.field.dailyMinMax"],
   ["field_dayOfMonth", "pf2e-weather-forge.field.dayOfMonth"],
   ["field_extremeWeather", "pf2e-weather-forge.field.extremeWeather"],
+  ["settings_extremeFrequency", "pf2e-weather-forge.settings.extremeFrequency.name"],
   ["field_humidity", "pf2e-weather-forge.field.humidity"],
   ["field_month", "pf2e-weather-forge.field.month"],
   ["field_moonPhase", "pf2e-weather-forge.field.moonPhase"],
@@ -182,9 +183,15 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const configuredLimit = getHistoryLimit();
     const chatMode = game.settings.get(MODULE_ID, "chatOutputMode") ?? "gm";
     const allowExtreme = game.settings.get(MODULE_ID, "allowExtreme") ?? true;
+    const extremeFrequency = String(game.settings.get(MODULE_ID, "extremeFrequency") ?? "normal");
     const forecastDays = String(game.settings.get(MODULE_ID, "forecastDays") ?? "3");
     return {
       allowExtreme,
+      extremeFrequencies: EXTREME_FREQUENCIES.map(key => ({
+        key,
+        label: game.i18n.localize(`${MODULE_ID}.settings.extremeFrequency.${key}`),
+        selected: key === extremeFrequency
+      })),
       forecastDays: FORECAST_DAYS.map(key => ({
         key,
         label: game.i18n.localize(`${MODULE_ID}.forecast.days.${key}`),
@@ -374,6 +381,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const preview = generateNextWeather(current, {
       climateZone: fd.get("climateZone"),
       allowExtreme: fd.get("allowExtreme") === "on",
+      extremeFrequency: fd.get("extremeFrequency") || game.settings.get(MODULE_ID, "extremeFrequency") || "normal",
       forceExtreme: fd.get("forceExtreme") === "on",
       extremeType: fd.get("extremeType"),
       forecast: getForecastState()
@@ -430,6 +438,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onNextTime(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    const form = target?.closest?.("form") ?? this.element;
+    await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = advanceTimeSegment(baseCalendar);
     await setCalendarState(calendar);
@@ -440,6 +450,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onPreviousTime(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    const form = target?.closest?.("form") ?? this.element;
+    await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = rewindTimeSegment(baseCalendar);
     await setCalendarState(calendar);
@@ -450,6 +462,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onNextDay(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    const form = target?.closest?.("form") ?? this.element;
+    await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = advanceCalendarDate(baseCalendar, 1);
     await setCalendarState(calendar);
@@ -460,6 +474,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onPreviousDay(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    const form = target?.closest?.("form") ?? this.element;
+    await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
     const calendar = advanceCalendarDate(baseCalendar, -1);
     await setCalendarState(calendar);
@@ -467,9 +483,11 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     this.render();
   }
 
-  static async #onClearHistory(event) {
+  static async #onClearHistory(event, target) {
     event.preventDefault();
-    PF2eWeatherForgeApp.#rememberActiveTab(this, null, "history");
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "history");
+    const form = target?.closest?.("form") ?? this.element;
+    if (form) await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     await clearWeatherHistory();
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.historyCleared`));
     this.render();
@@ -477,11 +495,28 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
 
   static async #persistUiSettings(fd) {
     if (!fd) return;
+
+    const climateZone = String(fd.get("climateZone") ?? "");
+    if (Object.hasOwn(CLIMATE_ZONES, climateZone)) {
+      const current = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+      if ((current.climateZone ?? "temperate") !== climateZone) {
+        await game.settings.set(MODULE_ID, "weatherState", { ...current, climateZone });
+        await game.settings.set(MODULE_ID, "weatherPreview", null);
+      }
+    }
+
     const historyLimit = String(fd.get("historyLimit") ?? getHistoryLimit());
     if (HISTORY_LIMITS.includes(historyLimit)) await game.settings.set(MODULE_ID, "historyLimit", historyLimit);
+
     const chatOutputMode = String(fd.get("chatOutputMode") ?? game.settings.get(MODULE_ID, "chatOutputMode") ?? "gm");
     if (["gm", "public", "ask"].includes(chatOutputMode)) await game.settings.set(MODULE_ID, "chatOutputMode", chatOutputMode);
-    await game.settings.set(MODULE_ID, "allowExtreme", fd.get("allowExtreme") === "on");
+
+    const allowExtremeValue = fd.has("allowExtreme") ? fd.get("allowExtreme") === "on" : (game.settings.get(MODULE_ID, "allowExtreme") ?? true);
+    await game.settings.set(MODULE_ID, "allowExtreme", allowExtremeValue);
+
+    const extremeFrequency = String(fd.get("extremeFrequency") ?? game.settings.get(MODULE_ID, "extremeFrequency") ?? "normal");
+    if (EXTREME_FREQUENCIES.includes(extremeFrequency)) await game.settings.set(MODULE_ID, "extremeFrequency", extremeFrequency);
+
     const forecastDays = String(fd.get("forecastDays") ?? game.settings.get(MODULE_ID, "forecastDays") ?? "3");
     if (FORECAST_DAYS.includes(forecastDays)) await game.settings.set(MODULE_ID, "forecastDays", forecastDays);
   }
