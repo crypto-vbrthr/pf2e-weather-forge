@@ -1,80 +1,151 @@
-# PF2e Weather Forge
+# PF2E Weather Forge
 
-PF2e Weather Forge is a localized Foundry VTT module for Pathfinder Second Edition that generates persistent, climate-aware weather using an internal Golarion calendar.
+A weather, forecast and calendar system for Pathfinder Second Edition Remastered on Foundry Virtual Tabletop.
+
+PF2E Weather Forge provides persistent weather generation, an integrated Golarion calendar, weather history, forecasting, climate zones, extreme weather events and chat integration without requiring external calendar modules.
+
+
+
+## Main Window
+
+![Main Window](screenshots/main_window.png)
+![Forecast](screenshots/forecast.png)
+![History](screenshots/history.png)
+
+
 
 ## Features
 
-- GM-only scene toolbar button
-- Foundry V13/V14 compatible ApplicationV2 UI
-- Three-column layout: current weather, settings/calendar, preview
-- Internal Calendar Forge with Golarion weekdays, months, seasons, moon phases, and time segments
-- Climate zones including temperate, coastal, arctic, desert, tropical, mountain, swamp, magical, and mediterranean
-- Living Weather v0.3:
-  - Daily minimum and maximum temperatures
-  - Temperature curve by time segment
-  - Warmer/cooler/stable daily trend
-  - Time-weighted weather phenomena
-  - More likely mist at night/morning
-  - More likely thunderstorms in afternoon/evening
-  - Multi-segment and multi-day extreme weather patterns
-- Localized German and English UI
+### Weather Generation
 
-## API
+* Persistent weather system
+* Realistic temperature progression throughout the day
+* Climate-based weather generation
+* Seasonal temperature ranges
+* Humidity, cloud cover and wind strength
+* Localized weather descriptions
+* Extreme weather events
+* Multi-stage weather systems
 
-```js
-game.modules.get("pf2e-weather-forge").api.open();
-game.modules.get("pf2e-weather-forge").api.getWeather();
-await game.modules.get("pf2e-weather-forge").api.getCalendar();
+### Calendar Forge
+
+Built-in Golarion calendar including:
+
+* Weekday
+* Day of month
+* Month
+* Year
+* Season
+* Moon phase
+* Time of day
+
+Supported times of day:
+
+* Morning
+* Noon
+* Afternoon
+* Evening
+* Night
+
+### Forecast System
+
+Generate weather forecasts based on actual weather trends.
+
+* 1 / 3 / 5 / 7 day forecasts
+* Temperature ranges
+* Rain probability
+* Storm probability
+* Confidence indicator
+* Forecasts influence future weather generation
+
+### Weather History
+
+Track historical weather data.
+
+* Weather history by date
+* Time-of-day entries
+* Configurable history limits
+* Historical weather review
+
+### Climate Zones
+
+Supported climate zones:
+
+* Arctic
+* Temperate
+* Mediterranean
+* Tropical
+* Desert
+* Mountain
+* Coastal
+* Swamp
+
+### Chat Integration
+
+Publish weather reports directly to chat.
+
+* GM-only weather reports
+* Public weather reports
+* Forecast reports
+* Localized chat cards
+
+### Localization
+
+Included translations:
+
+* English
+* German
+
+## User Interface
+
+The Weather Forge interface is divided into four tabs:
+
+### Weather
+
+Current weather conditions and generation controls.
+
+### Forecast
+
+Weather forecasts and weather trend information.
+
+### History
+
+Historical weather records.
+
+### Settings
+
+Climate zones, history settings, calendar controls and weather options.
+
+## Installation
+
+### Manifest URL
+
+Add the manifest URL in Foundry's Install Module dialog.
+
+```text
+<manifest-url>
 ```
 
-## Publishing Notes
+### Manual Installation
 
-Before publishing, update `module.json` with your GitHub repository URL, manifest URL, download URL, author name, and Discord name.
+1. Download the latest release.
+2. Extract the ZIP into:
+
+```text
+FoundryVTT/Data/modules/
+```
+
+3. Enable PF2E Weather Forge in your world.
+
+## Compatibility
+
+* Foundry VTT V14
+* Pathfinder 2E Remastered
 
 ## License
 
-MIT
+MIT License
 
+## Credits
 
-## v0.4.1 Weather History
-
-- Stores each accepted weather preview as a localized history entry.
-- Groups history by Golarion date and time segment.
-- Adds a configurable history limit: 30, 90, 180, 365 days, or unlimited.
-- History stores localization keys and raw values, not fixed display text, so entries remain translatable.
-- Exposes history API helpers through the module API.
-
-
-## v0.4.1
-
-- Wettergenerierung und Wetterhistorie liegen nun in zwei lokalisierten Reitern innerhalb desselben Fensters.
-- Die Historie nimmt keinen zusätzlichen Platz unterhalb der Generierung mehr ein.
-
-## v0.5.0 UI & Chat
-
-- Adds a third localized tab for settings.
-- Moves climate, calendar, history limit, and chat output options into the Settings tab.
-- Adds localized chat cards for the current weather.
-- Weather can be published as a GM whisper or publicly to the chat.
-- Keeps history entries localization-friendly by continuing to store keys and raw values.
-
-
-## v0.6.2
-
-- Öffentliche ChatCards zeigen kein Tagesminimum/-maximum mehr.
-- GM-Whisper enthält weiterhin die vollständigen Wetterdetails.
-
-
-## v0.6.2 - Forecast
-
-- Neuer Reiter **Vorhersage**.
-- 1/3/5/7 Tage Prognose.
-- Regenrisiko, Gewitterrisiko, Temperaturspanne und Verlässlichkeit.
-- Die spätere Wettergenerierung orientiert sich an der aktiven Vorhersage, bleibt aber plausibel variabel.
-- GM-ChatCard für Vorhersagen.
-- Alle neuen Texte sind DE/EN-lokalisierbar.
-
-
-## 0.6.2
-
-- Hardened settings registration. The app now re-checks and registers missing world settings before opening, preventing errors after partial updates or stale installs.
+Created for Pathfinder 2E Remastered and Foundry VTT.

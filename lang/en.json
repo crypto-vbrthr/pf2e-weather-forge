@@ -228,5 +228,11 @@
   "pf2e-weather-forge.settings.forecastState.name": "Forecast state",
   "pf2e-weather-forge.settings.forecastState.hint": "Internal Weather Forge forecast state.",
   "pf2e-weather-forge.settings.forecastDays.name": "Forecast range",
-  "pf2e-weather-forge.settings.forecastDays.hint": "Number of days generated in the Forecast tab."
+  "pf2e-weather-forge.settings.forecastDays.hint": "Number of days generated in the Forecast tab.",
+  "pf2e-weather-forge.settings.extremeFrequency.name": "Extreme weather frequency",
+  "pf2e-weather-forge.settings.extremeFrequency.hint": "Controls how often extreme weather can occur randomly.",
+  "pf2e-weather-forge.settings.extremeFrequency.rare": "Rare",
+  "pf2e-weather-forge.settings.extremeFrequency.normal": "Normal",
+  "pf2e-weather-forge.settings.extremeFrequency.frequent": "Frequent",
+  "pf2e-weather-forge.settings.extremeFrequency.veryFrequent": "Very frequent"
 }

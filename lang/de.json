@@ -228,5 +228,11 @@
   "pf2e-weather-forge.settings.forecastState.name": "Vorhersagezustand",
   "pf2e-weather-forge.settings.forecastState.hint": "Interne Wettervorhersage der Weather Forge.",
   "pf2e-weather-forge.settings.forecastDays.name": "Vorhersagezeitraum",
-  "pf2e-weather-forge.settings.forecastDays.hint": "Anzahl der Tage, die im Vorhersage-Reiter erzeugt werden."
+  "pf2e-weather-forge.settings.forecastDays.hint": "Anzahl der Tage, die im Vorhersage-Reiter erzeugt werden.",
+  "pf2e-weather-forge.settings.extremeFrequency.name": "Extremwetter-Häufigkeit",
+  "pf2e-weather-forge.settings.extremeFrequency.hint": "Legt fest, wie häufig Extremwetter zufällig entstehen kann.",
+  "pf2e-weather-forge.settings.extremeFrequency.rare": "Selten",
+  "pf2e-weather-forge.settings.extremeFrequency.normal": "Normal",
+  "pf2e-weather-forge.settings.extremeFrequency.frequent": "Häufig",
+  "pf2e-weather-forge.settings.extremeFrequency.veryFrequent": "Sehr häufig"
 }
