@@ -2,15 +2,14 @@
   "id": "pf2e-weather-forge",
   "title": "PF2e Weather Forge",
   "description": "A localized, persistent PF2e weather simulation for Foundry VTT with optional Calendar Forge-driven date, season, moon phase, daypart automation, forecasting, history, climate zones, and an internal calendar fallback.",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
   },
   "authors": [
     {
-      "name": "Your Name",
-      "discord": "your-discord-name",
+      "name": "crypto-vbrthr",
       "url": "https://github.com/crypto-vbrthr/pf2e-weather-forge"
     }
   ],
@@ -34,7 +33,7 @@
   ],
   "url": "https://github.com/crypto-vbrthr/pf2e-weather-forge",
   "manifest": "https://raw.githubusercontent.com/crypto-vbrthr/pf2e-weather-forge/main/module.json",
-  "download": "https://github.com/crypto-vbrthr/pf2e-weather-forge/releases/download/v0.8.0/pf2e-weather-forge.zip",
+  "download": "https://github.com/crypto-vbrthr/pf2e-weather-forge/releases/download/v1.0.0/pf2e-weather-forge.zip",
   "license": "MIT",
   "readme": "README.md",
   "bugs": "https://github.com/crypto-vbrthr/pf2e-weather-forge/issues",

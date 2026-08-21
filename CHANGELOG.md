@@ -1,5 +1,39 @@
 # Changelog
 
+## v1.0.0 – Final Release
+
+Weather Forge 1.0.0 promotes the successfully tested 0.9.0-rc.1 release candidate to the first stable release.
+
+### Final release status
+
+* Calendar Forge integration is optional and uses Foundry world time as the canonical clock.
+* Calendar-driven date, season, moon phase, regional context and daypart automation are release-ready.
+* Skipped dayparts are resolved chronologically so weather continues to evolve across large time jumps.
+* Manual current-daypart generation, prepared next-daypart previews and full automation are supported.
+* Runtime hardening covers midnight transitions, season and moon changes, backward time movement, reload/catch-up, stale previews and provider changes.
+* The original internal Golarion calendar remains available as a complete fallback when Calendar Forge is unavailable or disabled.
+* Forecast, weather history, chat output, GM/player permissions and DE/EN localization are included in the stable release.
+
+### RC promotion
+
+No weather-generation, calendar-integration or runtime behavior was changed after the accepted 0.9.0-rc.1 candidate. This release only finalizes version, manifest, release-contract tests and documentation.
+
+## v0.9.0-rc.1 – Release Candidate & Final Integration Review
+
+### Review hardening
+
+* Completed the final static integration review across Calendar Forge, internal calendar fallback, forecasting, history, chat output, localization, GM ownership, and ApplicationV2 templates.
+* Removed placeholder author metadata from the module manifest.
+* Calendar Forge provider selections now treat an empty available registry as authoritative, so a removed final region/moon id cannot linger as a stale setting.
+* Added a read-only `getCalendarSourceStatus()` public API diagnostic for suite integrations.
+* Added release-contract regression tests for manifest hygiene, optional Calendar Forge fallback behavior, localization parity, template actions, and provider-selection cleanup.
+
+### Release posture
+
+* Calendar Forge remains optional and is deliberately not a hard module dependency.
+* Internal calendar operation remains available as the complete fallback path.
+* No weather-generation balance tables or climate probabilities changed in this RC.
+
 ## v0.8.0 – Runtime & Edge-Case Hardening
 
 ### Hardened

@@ -341,3 +341,13 @@ Feature availability may change between releases.
 * Safe Calendar Forge provider-selection fallback
 * Calendar Forge ↔ internal calendar handoff hardening
 * Current Calendar Forge metadata in published weather reports
+
+## 1.0 Stable release
+
+* Optional Calendar Forge integration with internal-calendar fallback
+* Calendar-driven date, season, moon phase and daypart context
+* Manual, prepared-preview and automatic weather workflows
+* Chronological catch-up across skipped dayparts
+* Forecast, history and chat integration
+* Runtime and edge-case hardening
+* German and English localization

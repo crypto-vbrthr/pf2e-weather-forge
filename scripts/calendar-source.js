@@ -72,7 +72,9 @@ export function effectiveCalendarSourceMode() {
 
 function validProviderSelection(id, entries) {
   if (!id) return "";
-  if (!Array.isArray(entries) || !entries.length) return id;
+  // If a registry is unavailable we cannot validate yet and preserve the id.
+  // If it is available, even an empty list is authoritative: the saved id is stale.
+  if (!Array.isArray(entries)) return id;
   return entries.some(entry => entry?.id === id) ? id : "";
 }
 

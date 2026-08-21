@@ -4,7 +4,7 @@ import { defaultCalendarState, getCalendarState, setCalendarState, advanceTimeSe
 import { defaultWeatherHistory, getWeatherHistory, setWeatherHistory, clearWeatherHistory } from "./history-engine.js";
 import { defaultForecastState, generateForecast, generateForecastFromCalendars, getForecastState, setForecastState } from "./forecast-engine.js";
 import { installWeatherForgeLocalizationFallback } from "./localization.js";
-import { DEFAULT_DAYPART_BOUNDARIES, effectiveCalendarSourceMode, getCalendarForgeApi, calendarForgeOptions, getCalendarForgeSnapshot } from "./calendar-source.js";
+import { DEFAULT_DAYPART_BOUNDARIES, effectiveCalendarSourceMode, getCalendarForgeApi, calendarForgeOptions, getCalendarForgeSnapshot, calendarForgeRuntimeStatus } from "./calendar-source.js";
 import { defaultCalendarDrivenState, initializeCalendarDrivenWeather, processCalendarWorldTimeChange } from "./daypart-automation.js";
 
 
@@ -302,6 +302,7 @@ Hooks.once("ready", async () => {
     open: openWeatherForge,
     app: () => weatherForgeApp,
     getWeather: () => game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(),
+    getCalendarSourceStatus: () => calendarForgeRuntimeStatus(),
     getCalendar: async () => effectiveCalendarSourceMode() === "calendarForge"
       ? (await getCalendarForgeSnapshot({ fallbackWeather: game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState() }))
       : getCalendarState(),

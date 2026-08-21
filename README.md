@@ -1,10 +1,20 @@
 # PF2E Weather Forge
 
+## Stable Release
+
+**Weather Forge 1.0.0** is the first stable release. The accepted release candidate was promoted without additional runtime changes.
+
 A weather and forecast simulation for Pathfinder Second Edition Remastered on Foundry Virtual Tabletop, with optional Calendar Forge integration and a built-in calendar fallback.
 
 PF2E Weather Forge provides persistent, evolving weather generation, weather history, forecasting, climate zones, extreme weather events and chat integration. When Calendar Forge is active it can read date, local time, season and moon phase directly from that module; without Calendar Forge, the existing internal Golarion calendar continues to work as before.
 
 
+
+## 1.0.0 release candidate
+
+This release candidate is the final integration-review build before 1.0.0. Calendar Forge remains an optional data source: when it is active Weather Forge consumes its date, season, moon and world-time context; when it is absent or disabled Weather Forge continues with its internal calendar workflow. The RC adds no new weather balance model and focuses on compatibility, runtime continuity, localization, manifest hygiene, and integration diagnostics.
+
+The public module API also exposes `getCalendarSourceStatus()` for read-only diagnostics of the configured, available, effective and fallback calendar-source state.
 
 ## Main Window
 
