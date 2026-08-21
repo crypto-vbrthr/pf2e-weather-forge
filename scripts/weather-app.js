@@ -1,8 +1,19 @@
 import { MODULE_ID, CLIMATE_ZONES, TIME_SEGMENTS, WEEKDAYS, MONTHS, MONTH_LENGTHS, EXTREME_FREQUENCIES, defaultWeatherState, createInitialWeatherState, generateNextWeather } from "./weather-engine.js";
 import { MOON_PHASES, applyCalendarToWeather, calendarFromFormData, extractCalendarFromWeather, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, normalizeCalendarState } from "./calendar-engine.js";
 import { HISTORY_LIMITS, appendWeatherHistory, clearWeatherHistory, getHistoryLimit, getWeatherHistory, historyDescriptorKey } from "./history-engine.js";
-import { FORECAST_DAYS, defaultForecastState, forecastDescriptorKey, forecastDriverKey, generateForecast, getForecastState, setForecastState } from "./forecast-engine.js";
+import { FORECAST_DAYS, defaultForecastState, forecastDescriptorKey, forecastDriverKey, generateForecast, generateForecastFromCalendars, getForecastState, setForecastState } from "./forecast-engine.js";
 import { weatherForgeLocalize } from "./localization.js";
+import {
+  CALENDAR_SOURCE_MODES, DAYPART_AUTOMATION_MODES, DEFAULT_DAYPART_BOUNDARIES,
+  effectiveCalendarSourceMode, configuredCalendarSourceMode, isCalendarForgeAvailable,
+  listCalendarForgeRegions, listCalendarForgeMoons, normalizeDaypartBoundaries,
+  getCalendarForgeApi, calendarForgeOptions, getCalendarForgeSnapshot
+} from "./calendar-source.js";
+import {
+  getCalendarDrivenUiState, generateCurrentPhasePreview, acceptCurrentPhasePreview,
+  prepareNextPhasePreview, resolveCurrentPhaseWithInitialWeather, initializeCalendarDrivenWeather,
+  invalidateQueuedPreview
+} from "./daypart-automation.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -70,6 +81,30 @@ const TEMPLATE_LABEL_KEYS = [
   ["ui_saveCalendar", "pf2e-weather-forge.ui.saveCalendar"],
   ["ui_settingsMovedHint", "pf2e-weather-forge.ui.settingsMovedHint"],
   ["ui_weatherGeneration", "pf2e-weather-forge.ui.weatherGeneration"],
+  ["calendarIntegration_title", "pf2e-weather-forge.calendarIntegration.title"],
+  ["calendarIntegration_source", "pf2e-weather-forge.calendarIntegration.source"],
+  ["calendarIntegration_region", "pf2e-weather-forge.calendarIntegration.region"],
+  ["calendarIntegration_moon", "pf2e-weather-forge.calendarIntegration.moon"],
+  ["calendarIntegration_mode", "pf2e-weather-forge.calendarIntegration.mode"],
+  ["calendarIntegration_dayparts", "pf2e-weather-forge.calendarIntegration.dayparts"],
+  ["calendarIntegration_active", "pf2e-weather-forge.calendarIntegration.active"],
+  ["calendarIntegration_fallback", "pf2e-weather-forge.calendarIntegration.fallback"],
+  ["calendarIntegration_currentOpen", "pf2e-weather-forge.calendarIntegration.currentOpen"],
+  ["calendarIntegration_currentResolved", "pf2e-weather-forge.calendarIntegration.currentResolved"],
+  ["calendarIntegration_prepareNext", "pf2e-weather-forge.calendarIntegration.prepareNext"],
+  ["calendarIntegration_nextPrepared", "pf2e-weather-forge.calendarIntegration.nextPrepared"],
+  ["calendarIntegration_nextPhase", "pf2e-weather-forge.calendarIntegration.nextPhase"],
+  ["calendarIntegration_previewCurrent", "pf2e-weather-forge.calendarIntegration.previewCurrent"],
+  ["calendarIntegration_previewNext", "pf2e-weather-forge.calendarIntegration.previewNext"],
+  ["calendarIntegration_noCurrentPreview", "pf2e-weather-forge.calendarIntegration.noCurrentPreview"],
+  ["calendarIntegration_noNextPreview", "pf2e-weather-forge.calendarIntegration.noNextPreview"],
+  ["calendarIntegration_queuedHint", "pf2e-weather-forge.calendarIntegration.queuedHint"],
+  ["calendarIntegration_timeOwned", "pf2e-weather-forge.calendarIntegration.timeOwned"],
+  ["time_morning", "pf2e-weather-forge.time.morning"],
+  ["time_noon", "pf2e-weather-forge.time.noon"],
+  ["time_afternoon", "pf2e-weather-forge.time.afternoon"],
+  ["time_evening", "pf2e-weather-forge.time.evening"],
+  ["time_night", "pf2e-weather-forge.time.night"],
 ];
 
 function buildTemplateLabels() {
@@ -116,7 +151,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       publishGM: PF2eWeatherForgeApp.#onPublishGM,
       publishPublic: PF2eWeatherForgeApp.#onPublishPublic,
       generateForecast: PF2eWeatherForgeApp.#onGenerateForecast,
-      publishForecastGM: PF2eWeatherForgeApp.#onPublishForecastGM
+      publishForecastGM: PF2eWeatherForgeApp.#onPublishForecastGM,
+      prepareNextPreview: PF2eWeatherForgeApp.#onPrepareNextPreview
     }
   };
 
@@ -127,17 +163,30 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   };
 
   async _prepareContext(options) {
-    const calendar = await getCalendarState();
     const storedCurrent = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+    const integration = effectiveCalendarSourceMode() === "calendarForge" ? await getCalendarDrivenUiState() : { active: false };
+    const calendar = integration.active ? integration.phase.calendar : await getCalendarState();
     const storedPreview = game.settings.get(MODULE_ID, "weatherPreview") ?? null;
-    const current = applyCalendarToWeather(storedCurrent, calendar);
+    const current = integration.active ? { ...storedCurrent, ...calendar, timeSegment: integration.phase.segment } : applyCalendarToWeather(storedCurrent, calendar);
     const preview = storedPreview ? storedPreview : null;
+    const queuedPreview = integration.active && integration.queuedPreview?.weather ? integration.queuedPreview.weather : null;
     const forecast = getForecastState();
+    const labels = buildTemplateLabels();
+    const preparedPreview = preview ? this.#prepareWeather(preview) : null;
+    const preparedQueuedPreview = queuedPreview ? this.#prepareWeather(queuedPreview) : null;
+    const previewDisplay = preparedPreview ?? preparedQueuedPreview;
+    const previewIsQueued = !preparedPreview && Boolean(preparedQueuedPreview);
+    const previewContextLabel = previewDisplay
+      ? (previewIsQueued ? labels.calendarIntegration_previewNext : labels.calendarIntegration_previewCurrent)
+      : "";
+    const previewEmptyLabel = integration.active
+      ? (integration.resolved ? labels.calendarIntegration_noNextPreview : labels.calendarIntegration_noCurrentPreview)
+      : labels.ui_noPreview;
 
     const activeTab = ["generator", "forecast", "history", "settings"].includes(this.activeTab) ? this.activeTab : "generator";
 
     return {
-      labels: buildTemplateLabels(),
+      labels,
       activeTab,
       activeTabs: {
         generator: activeTab === "generator",
@@ -146,8 +195,14 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
         settings: activeTab === "settings"
       },
       current: this.#prepareWeather(current),
-      preview: preview ? this.#prepareWeather(preview) : null,
+      preview: preparedPreview,
+      queuedPreview: preparedQueuedPreview,
+      previewDisplay,
+      previewIsQueued,
+      previewContextLabel,
+      previewEmptyLabel,
       calendar: this.#prepareCalendar(calendar),
+      calendarIntegration: this.#prepareCalendarIntegration(integration, preview, queuedPreview),
       climateZones: Object.keys(CLIMATE_ZONES).map(key => ({
         key,
         label: game.i18n.localize(`${MODULE_ID}.climate.${key}`),
@@ -175,18 +230,34 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       })),
       history: this.#prepareHistory(getWeatherHistory()),
       forecast: this.#prepareForecast(forecast),
-      appSettings: this.#prepareSettings(current)
+      appSettings: this.#prepareSettings(current, integration)
     };
   }
 
-  #prepareSettings(current) {
+  #prepareSettings(current, integration = { active: false }) {
     const configuredLimit = getHistoryLimit();
     const chatMode = game.settings.get(MODULE_ID, "chatOutputMode") ?? "gm";
     const allowExtreme = game.settings.get(MODULE_ID, "allowExtreme") ?? true;
     const extremeFrequency = String(game.settings.get(MODULE_ID, "extremeFrequency") ?? "normal");
     const forecastDays = String(game.settings.get(MODULE_ID, "forecastDays") ?? "3");
+    const sourceMode = configuredCalendarSourceMode();
+    const configuredRegion = String(game.settings.get(MODULE_ID, "calendarForgeRegionId") ?? "");
+    const configuredMoon = String(game.settings.get(MODULE_ID, "calendarForgeMoonId") ?? "");
+    const configuredAutomation = String(game.settings.get(MODULE_ID, "daypartAutomationMode") ?? "manual");
+    const boundaries = normalizeDaypartBoundaries(game.settings.get(MODULE_ID, "daypartBoundaries") ?? DEFAULT_DAYPART_BOUNDARIES);
+    const labelOf = (value, fallback) => {
+      if (typeof value === "string") return value;
+      if (value?.i18n) return game.i18n.localize(value.i18n);
+      return value?.value ?? fallback;
+    };
     return {
       allowExtreme,
+      calendarForgeAvailable: isCalendarForgeAvailable(),
+      calendarSourceModes: CALENDAR_SOURCE_MODES.map(key => ({ key, label: game.i18n.localize(`${MODULE_ID}.calendarIntegration.source.${key}`), selected: key === sourceMode })),
+      calendarForgeRegions: [{ key: "", label: game.i18n.localize(`${MODULE_ID}.calendarIntegration.defaultRegion`), selected: !configuredRegion }, ...listCalendarForgeRegions().map(region => ({ key: region.id, label: labelOf(region.label, region.id), selected: region.id === configuredRegion }))],
+      calendarForgeMoons: [{ key: "", label: game.i18n.localize(`${MODULE_ID}.calendarIntegration.defaultMoon`), selected: !configuredMoon }, ...listCalendarForgeMoons().map(moon => ({ key: moon.id, label: labelOf(moon.label, moon.id), selected: moon.id === configuredMoon }))],
+      daypartAutomationModes: DAYPART_AUTOMATION_MODES.map(key => ({ key, label: game.i18n.localize(`${MODULE_ID}.calendarIntegration.automation.${key}`), selected: key === configuredAutomation })),
+      daypartBoundaries: boundaries,
       extremeFrequencies: EXTREME_FREQUENCIES.map(key => ({
         key,
         label: game.i18n.localize(`${MODULE_ID}.settings.extremeFrequency.${key}`),
@@ -212,6 +283,30 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   }
 
 
+  #prepareCalendarIntegration(integration, preview, queuedPreview) {
+    if (!integration?.active) {
+      return { active: false, available: isCalendarForgeAvailable(), effectiveSource: "internal" };
+    }
+    const phase = integration.phase;
+    const next = integration.nextPhase;
+    return {
+      active: true,
+      available: true,
+      effectiveSource: "calendarForge",
+      resolved: Boolean(integration.resolved),
+      canGenerateCurrent: !integration.resolved,
+      canAcceptCurrent: !integration.resolved && Boolean(preview),
+      canPrepareNext: Boolean(integration.resolved && next),
+      automationMode: integration.automationMode,
+      currentSegmentLabel: game.i18n.localize(`${MODULE_ID}.time.${phase.segment}`),
+      nextSegmentLabel: next ? game.i18n.localize(`${MODULE_ID}.time.${next.segment}`) : "",
+      nextTimeLabel: next?.calendar?.formattedTime ?? "",
+      queued: Boolean(queuedPreview),
+      queuedSegmentLabel: queuedPreview ? game.i18n.localize(`${MODULE_ID}.time.${queuedPreview.timeSegment}`) : ""
+    };
+  }
+
+
   #prepareForecast(forecast) {
     const entries = forecast?.entries ?? [];
     return {
@@ -220,9 +315,9 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       generatedFrom: forecast?.generatedFrom ?? null,
       entries: entries.map(entry => ({
         ...entry,
-        weekdayLabel: game.i18n.localize(`${MODULE_ID}.weekday.${entry.calendar?.weekday}`),
-        monthLabel: game.i18n.localize(`${MODULE_ID}.month.${entry.calendar?.month}`),
-        seasonLabel: game.i18n.localize(`${MODULE_ID}.season.${entry.calendar?.season}`),
+        weekdayLabel: entry.calendar?.calendarLabels?.weekday || game.i18n.localize(`${MODULE_ID}.weekday.${entry.calendar?.weekday}`),
+        monthLabel: entry.calendar?.calendarLabels?.month || game.i18n.localize(`${MODULE_ID}.month.${entry.calendar?.month}`),
+        seasonLabel: entry.calendar?.calendarLabels?.season || game.i18n.localize(`${MODULE_ID}.season.${entry.calendar?.season}`),
         trendLabel: game.i18n.localize(`${MODULE_ID}.trend.${entry.trend ?? "stable"}`),
         weatherLabel: game.i18n.localize(`${MODULE_ID}.forecast.weather.${forecastDescriptorKey(entry)}`),
         driverLabel: game.i18n.localize(`${MODULE_ID}.forecast.driver.${forecastDriverKey(entry)}`),
@@ -249,6 +344,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
           weekday: entry.weekday,
           season: entry.season,
           moonPhase: entry.moonPhase,
+          formattedDate: entry.formattedDate ?? null,
+          calendarLabels: entry.calendarLabels ?? null,
           entries: []
         });
       }
@@ -259,10 +356,11 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       const latest = group.entries[group.entries.length - 1];
       return {
         ...group,
-        weekdayLabel: game.i18n.localize(`${MODULE_ID}.weekday.${group.weekday}`),
-        monthLabel: game.i18n.localize(`${MODULE_ID}.month.${group.month}`),
-        seasonLabel: game.i18n.localize(`${MODULE_ID}.season.${group.season}`),
-        moonPhaseLabel: game.i18n.localize(`${MODULE_ID}.moon.${group.moonPhase}`),
+        displayDate: group.formattedDate || null,
+        weekdayLabel: group.calendarLabels?.weekday || game.i18n.localize(`${MODULE_ID}.weekday.${group.weekday}`),
+        monthLabel: group.calendarLabels?.month || game.i18n.localize(`${MODULE_ID}.month.${group.month}`),
+        seasonLabel: group.calendarLabels?.season || game.i18n.localize(`${MODULE_ID}.season.${group.season}`),
+        moonPhaseLabel: group.calendarLabels?.moonPhase || game.i18n.localize(`${MODULE_ID}.moon.${group.moonPhase}`),
         summary: latest
           ? `${latest.precipitationLabel}, ${latest.temperature} °C, ${latest.windStrengthDescription}`
           : game.i18n.localize(`${MODULE_ID}.history.noEntries`),
@@ -301,13 +399,14 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   }
 
   #prepareCalendar(calendar) {
+    const labels = calendar?.calendarLabels ?? {};
     return {
       ...calendar,
       timeSegmentLabel: game.i18n.localize(`${MODULE_ID}.time.${calendar.timeSegment}`),
-      weekdayLabel: game.i18n.localize(`${MODULE_ID}.weekday.${calendar.weekday}`),
-      monthLabel: game.i18n.localize(`${MODULE_ID}.month.${calendar.month}`),
-      moonPhaseLabel: game.i18n.localize(`${MODULE_ID}.moon.${calendar.moonPhase}`),
-      seasonLabel: game.i18n.localize(`${MODULE_ID}.season.${calendar.season}`)
+      weekdayLabel: labels.weekday || calendar.weekdayLabel || game.i18n.localize(`${MODULE_ID}.weekday.${calendar.weekday}`),
+      monthLabel: labels.month || calendar.monthLabel || game.i18n.localize(`${MODULE_ID}.month.${calendar.month}`),
+      moonPhaseLabel: labels.moonPhase || calendar.moonPhaseLabel || game.i18n.localize(`${MODULE_ID}.moon.${calendar.moonPhase}`),
+      seasonLabel: labels.season || calendar.seasonLabel || game.i18n.localize(`${MODULE_ID}.season.${calendar.season}`)
     };
   }
 
@@ -343,10 +442,10 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       humidityDescription: game.i18n.localize(`${MODULE_ID}.humidity.${this.#descriptorKey("humidity", weather.humidity ?? 0)}`),
       cloudDensityDescription: game.i18n.localize(`${MODULE_ID}.cloudDensity.${this.#descriptorKey("cloudDensity", weather.cloudDensity ?? 0)}`),
       windStrengthDescription: game.i18n.localize(`${MODULE_ID}.windStrength.${this.#descriptorKey("windStrength", weather.windStrength ?? 0)}`),
-      weekdayLabel: game.i18n.localize(`${MODULE_ID}.weekday.${weather.weekday}`),
-      monthLabel: game.i18n.localize(`${MODULE_ID}.month.${weather.month}`),
-      moonPhaseLabel: game.i18n.localize(`${MODULE_ID}.moon.${weather.moonPhase}`),
-      seasonLabel: game.i18n.localize(`${MODULE_ID}.season.${weather.season}`),
+      weekdayLabel: weather.calendarLabels?.weekday || weather.weekdayLabel || game.i18n.localize(`${MODULE_ID}.weekday.${weather.weekday}`),
+      monthLabel: weather.calendarLabels?.month || weather.monthLabel || game.i18n.localize(`${MODULE_ID}.month.${weather.month}`),
+      moonPhaseLabel: weather.calendarLabels?.moonPhase || weather.moonPhaseLabel || game.i18n.localize(`${MODULE_ID}.moon.${weather.moonPhase}`),
+      seasonLabel: weather.calendarLabels?.season || weather.seasonLabel || game.i18n.localize(`${MODULE_ID}.season.${weather.season}`),
       description: game.i18n.localize(`${MODULE_ID}.${weather.descriptionKey}`),
       dailyMinTemp: weather.dailyProfile?.minTemp ?? weather.temperature,
       dailyMaxTemp: weather.dailyProfile?.maxTemp ?? weather.temperature,
@@ -375,18 +474,28 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "generator");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
-    const calendar = await setCalendarState(calendarFromFormData(fd));
     await PF2eWeatherForgeApp.#persistUiSettings(fd);
-    const current = applyCalendarToWeather(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), calendar);
-    const preview = generateNextWeather(current, {
-      climateZone: fd.get("climateZone"),
-      allowExtreme: fd.get("allowExtreme") === "on",
-      extremeFrequency: fd.get("extremeFrequency") || game.settings.get(MODULE_ID, "extremeFrequency") || "normal",
-      forceExtreme: fd.get("forceExtreme") === "on",
-      extremeType: fd.get("extremeType"),
-      forecast: getForecastState()
-    });
-    await game.settings.set(MODULE_ID, "weatherPreview", preview);
+    if (effectiveCalendarSourceMode() === "calendarForge") {
+      await generateCurrentPhasePreview({
+        climateZone: fd.get("climateZone"),
+        allowExtreme: fd.get("allowExtreme") === "on",
+        extremeFrequency: fd.get("extremeFrequency") || game.settings.get(MODULE_ID, "extremeFrequency") || "normal",
+        forceExtreme: fd.get("forceExtreme") === "on",
+        extremeType: fd.get("extremeType")
+      });
+    } else {
+      const calendar = await setCalendarState(calendarFromFormData(fd));
+      const current = applyCalendarToWeather(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), calendar);
+      const preview = generateNextWeather(current, {
+        climateZone: fd.get("climateZone"),
+        allowExtreme: fd.get("allowExtreme") === "on",
+        extremeFrequency: fd.get("extremeFrequency") || game.settings.get(MODULE_ID, "extremeFrequency") || "normal",
+        forceExtreme: fd.get("forceExtreme") === "on",
+        extremeType: fd.get("extremeType"),
+        forecast: getForecastState()
+      });
+      await game.settings.set(MODULE_ID, "weatherPreview", preview);
+    }
     this.render();
   }
 
@@ -395,10 +504,15 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     PF2eWeatherForgeApp.#rememberActiveTab(this, null, "generator");
     const preview = game.settings.get(MODULE_ID, "weatherPreview");
     if (!preview) return;
-    await game.settings.set(MODULE_ID, "weatherState", preview);
-    await appendWeatherHistory(preview);
-    await setCalendarState(extractCalendarFromWeather(preview));
-    await game.settings.set(MODULE_ID, "weatherPreview", null);
+    if (effectiveCalendarSourceMode() === "calendarForge") {
+      const committed = await acceptCurrentPhasePreview();
+      if (!committed) return;
+    } else {
+      await game.settings.set(MODULE_ID, "weatherState", preview);
+      await appendWeatherHistory(preview);
+      await setCalendarState(extractCalendarFromWeather(preview));
+      await game.settings.set(MODULE_ID, "weatherPreview", null);
+    }
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.weatherAccepted`));
     this.render();
   }
@@ -409,10 +523,14 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
     const climateZone = fd.get("climateZone") || "temperate";
-    const calendar = await setCalendarState(calendarFromFormData(fd));
     await PF2eWeatherForgeApp.#persistUiSettings(fd);
-    await game.settings.set(MODULE_ID, "weatherState", applyCalendarToWeather(createInitialWeatherState(climateZone, calendar), calendar));
-    await game.settings.set(MODULE_ID, "weatherPreview", null);
+    if (effectiveCalendarSourceMode() === "calendarForge") {
+      await resolveCurrentPhaseWithInitialWeather(climateZone);
+    } else {
+      const calendar = await setCalendarState(calendarFromFormData(fd));
+      await game.settings.set(MODULE_ID, "weatherState", applyCalendarToWeather(createInitialWeatherState(climateZone, calendar), calendar));
+      await game.settings.set(MODULE_ID, "weatherPreview", null);
+    }
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.weatherReset`));
     this.render();
   }
@@ -422,6 +540,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
+    if (effectiveCalendarSourceMode() === "calendarForge") return;
     const calendar = calendarFromFormData(fd);
     await setCalendarState(calendar);
     await PF2eWeatherForgeApp.#persistUiSettings(fd);
@@ -438,6 +557,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onNextTime(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    if (effectiveCalendarSourceMode() === "calendarForge") return;
     const form = target?.closest?.("form") ?? this.element;
     await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
@@ -450,6 +570,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onPreviousTime(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    if (effectiveCalendarSourceMode() === "calendarForge") return;
     const form = target?.closest?.("form") ?? this.element;
     await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
@@ -462,6 +583,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onNextDay(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    if (effectiveCalendarSourceMode() === "calendarForge") return;
     const form = target?.closest?.("form") ?? this.element;
     await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
@@ -474,6 +596,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   static async #onPreviousDay(event, target) {
     event.preventDefault();
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
+    if (effectiveCalendarSourceMode() === "calendarForge") return;
     const form = target?.closest?.("form") ?? this.element;
     await PF2eWeatherForgeApp.#persistUiSettings(new FormData(form));
     const baseCalendar = PF2eWeatherForgeApp.#calendarFromCurrentForm(target, this);
@@ -502,7 +625,26 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       if ((current.climateZone ?? "temperate") !== climateZone) {
         await game.settings.set(MODULE_ID, "weatherState", { ...current, climateZone });
         await game.settings.set(MODULE_ID, "weatherPreview", null);
+        if (effectiveCalendarSourceMode() === "calendarForge") await invalidateQueuedPreview();
       }
+    }
+
+    if (fd.has("calendarSourceMode")) {
+      const source = String(fd.get("calendarSourceMode") ?? "auto");
+      if (CALENDAR_SOURCE_MODES.includes(source)) await game.settings.set(MODULE_ID, "calendarSourceMode", source);
+    }
+    if (fd.has("calendarForgeRegionId")) await game.settings.set(MODULE_ID, "calendarForgeRegionId", String(fd.get("calendarForgeRegionId") ?? ""));
+    if (fd.has("calendarForgeMoonId")) await game.settings.set(MODULE_ID, "calendarForgeMoonId", String(fd.get("calendarForgeMoonId") ?? ""));
+    if (fd.has("daypartAutomationMode")) {
+      const mode = String(fd.get("daypartAutomationMode") ?? "manual");
+      if (DAYPART_AUTOMATION_MODES.includes(mode)) await game.settings.set(MODULE_ID, "daypartAutomationMode", mode);
+    }
+    if (fd.has("daypartMorning")) {
+      const boundaries = normalizeDaypartBoundaries({
+        morning: Number(fd.get("daypartMorning")), noon: Number(fd.get("daypartNoon")), afternoon: Number(fd.get("daypartAfternoon")),
+        evening: Number(fd.get("daypartEvening")), night: Number(fd.get("daypartNight"))
+      });
+      await game.settings.set(MODULE_ID, "daypartBoundaries", boundaries);
     }
 
     const historyLimit = String(fd.get("historyLimit") ?? getHistoryLimit());
@@ -526,9 +668,21 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
-    await setCalendarState(calendarFromFormData(fd));
     await PF2eWeatherForgeApp.#persistUiSettings(fd);
+    if (effectiveCalendarSourceMode() === "calendarForge") await initializeCalendarDrivenWeather();
+    else if (fd.has("calendarMonth")) await setCalendarState(calendarFromFormData(fd));
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.settingsSaved`));
+    this.render();
+  }
+
+  static async #onPrepareNextPreview(event, target) {
+    event.preventDefault();
+    PF2eWeatherForgeApp.#rememberActiveTab(this, target, "generator");
+    const form = target.closest("form") ?? this.element;
+    const fd = new FormData(form);
+    await PF2eWeatherForgeApp.#persistUiSettings(fd);
+    const queued = await prepareNextPhasePreview({ climateZone: fd.get("climateZone") });
+    if (queued) ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.nextPreviewPrepared`));
     this.render();
   }
 
@@ -549,10 +703,23 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
     await PF2eWeatherForgeApp.#persistUiSettings(fd);
-    const calendar = await setCalendarState(calendarFromFormData(fd));
-    const current = applyCalendarToWeather(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), calendar);
     const days = Number(fd.get("forecastDays") ?? game.settings.get(MODULE_ID, "forecastDays") ?? 3);
-    const forecast = generateForecast(current, days);
+    let forecast;
+    if (effectiveCalendarSourceMode() === "calendarForge") {
+      const api = getCalendarForgeApi();
+      const baseContext = await api.getTemporalContext(calendarForgeOptions());
+      const t = baseContext.raw.calendar.time ?? {};
+      const secondsPerDay = Number(t.secondsPerMinute ?? 60) * Number(t.minutesPerHour ?? 60) * Number(t.hoursPerDay ?? 24);
+      const currentCalendar = await getCalendarForgeSnapshot({ fallbackWeather: game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState() });
+      const current = { ...(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState()), ...currentCalendar };
+      const calendars = [];
+      for (let day = 1; day <= days; day += 1) calendars.push(await getCalendarForgeSnapshot({ worldTime: Number(game.time.worldTime) + day * secondsPerDay, fallbackWeather: current }));
+      forecast = generateForecastFromCalendars(current, calendars);
+    } else {
+      const calendar = await setCalendarState(calendarFromFormData(fd));
+      const current = applyCalendarToWeather(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), calendar);
+      forecast = generateForecast(current, days);
+    }
     await setForecastState(forecast);
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.forecastGenerated`));
     this.render();
@@ -614,10 +781,10 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       : game.i18n.localize(`${MODULE_ID}.extreme.none`);
     return {
       title: game.i18n.localize(`${MODULE_ID}.chat.title`),
-      date: `${game.i18n.localize(`${MODULE_ID}.weekday.${weather.weekday}`)}, ${weather.dayOfMonth}. ${game.i18n.localize(`${MODULE_ID}.month.${weather.month}`)} ${weather.year}`,
+      date: weather.formattedDate || `${weather.calendarLabels?.weekday || game.i18n.localize(`${MODULE_ID}.weekday.${weather.weekday}`)}, ${weather.dayOfMonth}. ${weather.calendarLabels?.month || game.i18n.localize(`${MODULE_ID}.month.${weather.month}`)} ${weather.year}`,
       time: game.i18n.localize(`${MODULE_ID}.time.${weather.timeSegment}`),
-      season: game.i18n.localize(`${MODULE_ID}.season.${weather.season}`),
-      moon: game.i18n.localize(`${MODULE_ID}.moon.${weather.moonPhase}`),
+      season: weather.calendarLabels?.season || game.i18n.localize(`${MODULE_ID}.season.${weather.season}`),
+      moon: weather.calendarLabels?.moonPhase || game.i18n.localize(`${MODULE_ID}.moon.${weather.moonPhase}`),
       description: game.i18n.localize(`${MODULE_ID}.${weather.descriptionKey ?? "description.clearMild"}`),
       temperature: `${weather.temperature} °C`,
       dailyMinMax: `${weather.dailyProfile?.minTemp ?? weather.temperature} / ${weather.dailyProfile?.maxTemp ?? weather.temperature} °C`,
@@ -661,7 +828,7 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const e = foundry.utils.escapeHTML;
     const title = game.i18n.localize(`${MODULE_ID}.forecast.chatTitle`);
     const rows = (forecast.entries ?? []).map(entry => {
-      const date = `${game.i18n.localize(`${MODULE_ID}.weekday.${entry.calendar?.weekday}`)}, ${entry.calendar?.dayOfMonth}. ${game.i18n.localize(`${MODULE_ID}.month.${entry.calendar?.month}`)} ${entry.calendar?.year}`;
+      const date = entry.calendar?.formattedDate || `${entry.calendar?.calendarLabels?.weekday || game.i18n.localize(`${MODULE_ID}.weekday.${entry.calendar?.weekday}`)}, ${entry.calendar?.dayOfMonth}. ${entry.calendar?.calendarLabels?.month || game.i18n.localize(`${MODULE_ID}.month.${entry.calendar?.month}`)} ${entry.calendar?.year}`;
       const weather = game.i18n.localize(`${MODULE_ID}.forecast.weather.${forecastDescriptorKey(entry)}`);
       const driver = game.i18n.localize(`${MODULE_ID}.forecast.driver.${forecastDriverKey(entry)}`);
       const trend = game.i18n.localize(`${MODULE_ID}.trend.${entry.trend ?? "stable"}`);

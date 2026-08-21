@@ -33,10 +33,17 @@ export function makeHistoryDateKey(entryOrWeather) {
   ].join("-");
 }
 
-export function createHistoryEntry(weather) {
+export function createHistoryEntry(weather, metadata = {}) {
   const entry = {
     id: foundry.utils.randomID(),
     createdAt: Date.now(),
+    worldTime: metadata.worldTime ?? weather.weatherForgeWorldTime ?? null,
+    calendarSource: metadata.calendarSource ?? weather.weatherForgeCalendarSource ?? "internal",
+    calendarId: metadata.calendarId ?? null,
+    regionId: metadata.regionId ?? null,
+    formattedDate: metadata.formattedDate ?? null,
+    resolution: weather.weatherForgeResolution ?? null,
+    calendarLabels: weather.calendarLabels ? structuredClone(weather.calendarLabels) : null,
     dateKey: makeHistoryDateKey(weather),
     year: numberOr(weather.year, 4726),
     month: weather.month ?? "abadius",
@@ -82,9 +89,9 @@ export function trimHistoryByLimit(history, limit = getHistoryLimit()) {
   return kept.reverse();
 }
 
-export async function appendWeatherHistory(weather) {
+export async function appendWeatherHistory(weather, metadata = {}) {
   const history = getWeatherHistory();
-  const next = trimHistoryByLimit([...history, createHistoryEntry(weather)]);
+  const next = trimHistoryByLimit([...history, createHistoryEntry(weather, metadata)]);
   await setWeatherHistory(next);
   return next;
 }

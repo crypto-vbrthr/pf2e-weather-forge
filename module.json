@@ -1,8 +1,8 @@
 {
   "id": "pf2e-weather-forge",
   "title": "PF2e Weather Forge",
-  "description": "A localized weather, chat, history, and calendar generation module for Pathfinder Second Edition in Foundry VTT. Generates persistent, climate-aware living weather with daily temperature curves, weather history, chat cards, and an internal Golarion calendar.",
-  "version": "0.6.7",
+  "description": "A localized, persistent PF2e weather simulation for Foundry VTT with optional Calendar Forge-driven date, season, moon phase, daypart automation, forecasting, history, climate zones, and an internal calendar fallback.",
+  "version": "0.7.3",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
@@ -34,7 +34,7 @@
   ],
   "url": "https://github.com/crypto-vbrthr/pf2e-weather-forge",
   "manifest": "https://raw.githubusercontent.com/crypto-vbrthr/pf2e-weather-forge/main/module.json",
-  "download": "https://github.com/crypto-vbrthr/pf2e-weather-forge/releases/download/v0.6.7/pf2e-weather-forge.zip",
+  "download": "https://github.com/crypto-vbrthr/pf2e-weather-forge/releases/download/v0.7.3/pf2e-weather-forge.zip",
   "license": "MIT",
   "readme": "README.md",
   "bugs": "https://github.com/crypto-vbrthr/pf2e-weather-forge/issues",

@@ -1,4 +1,59 @@
+# 0.7.3 – Daypart Preview Presentation Fix
+
+- Prepared weather for the next daypart is now shown as the full weather preview instead of a small summary below an empty-preview message.
+- The preview panel clearly distinguishes between current and next-daypart previews.
+- Empty-state text now distinguishes the current phase from the next phase.
+- Prepared weather is explicitly marked as not active yet.
+
+# 0.7.2 – Calendar Integration UI & Localization Fix
+
+- Added complete internal DE/EN fallback translations for all Calendar Forge integration UI strings.
+- Prevented raw i18n keys from appearing if Foundry has stale package-language cache data.
+- Made Calendar Forge region/moon settings, daypart fields, status cards, and action buttons shrink- and wrap-safe.
+- Improved responsive settings layout at medium and narrow window widths.
+- Fixed a stray CSS brace in the history styles.
+
 # Changelog
+
+## v0.7.1 – ApplicationV2 Template Helper Fix
+
+### Fixed
+
+* Fixed Weather Forge failing to open on Foundry V14 with `Missing helper: "wf"`.
+* Daypart boundary labels are now localized in the application context like the rest of the Weather Forge UI instead of relying on a custom Handlebars helper.
+* Removed the obsolete custom `wf` / `wff` Handlebars helper registration.
+
+---
+
+## v0.7.0 – Calendar-Driven Weather & Daypart Automation
+
+### Added
+
+* Optional Calendar Forge integration for date, local time, season, and moon phase.
+* Calendar source modes: Automatic, Calendar Forge, and Internal Calendar.
+* Configurable Calendar Forge region and primary weather moon.
+* Configurable daypart boundaries, defaulting to 05:00 / 11:00 / 14:00 / 18:00 / 22:00.
+* Calendar-driven daypart state machine. Weather Forge no longer advances time while Calendar Forge is active.
+* Manual and fully automatic current-daypart resolution modes.
+* Prepared previews for the next daypart after the current daypart has been resolved.
+* Automatic chronological catch-up for every skipped daypart during larger forward world-time jumps.
+* Automatic resolution of an unresolved daypart when the world leaves it.
+* Calendar Forge-aware forecasts using future Calendar Forge dates and seasons.
+* Weather history metadata for canonical world time, calendar source, calendar, region, and resolution mode.
+
+### Changed
+
+* In Calendar Forge mode the old Weather Forge time navigation is hidden and disabled. Foundry world time remains the single authoritative clock.
+* A prepared preview becomes the current preview when its target daypart is reached in manual mode. If that daypart is skipped, the prepared preview is used automatically as part of catch-up.
+* Backward world-time movement does not regenerate past weather; the current weather is carried into the newly selected daypart and queued previews are cleared.
+* The internal Weather Forge calendar remains the complete fallback when Calendar Forge is unavailable or explicitly disabled.
+
+### Compatibility
+
+* Calendar Forge is optional, not a hard dependency.
+* Designed for Calendar Forge 0.6.2 and its public `getTemporalContext()` / `toWorldTime()` API.
+
+---
 
 ## v0.6.7
 

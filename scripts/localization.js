@@ -473,6 +473,115 @@ export const WEATHER_FORGE_TRANSLATIONS = {
   }
 };
 
+
+
+// Calendar Forge integration strings were added after the original fallback table.
+// Keep a compact second layer here so ApplicationV2 stays readable even when Foundry's
+// package language cache has not picked up a newly-added module language key yet.
+const WEATHER_FORGE_INTEGRATION_TRANSLATIONS = {
+  de: {
+    "pf2e-weather-forge.calendarIntegration.title": "Calendar-Forge-Integration",
+    "pf2e-weather-forge.calendarIntegration.source": "Kalenderquelle",
+    "pf2e-weather-forge.calendarIntegration.region": "Calendar-Forge-Region",
+    "pf2e-weather-forge.calendarIntegration.moon": "Mond für Weather Forge",
+    "pf2e-weather-forge.calendarIntegration.mode": "Wetterwechsel bei neuer Tagesphase",
+    "pf2e-weather-forge.calendarIntegration.dayparts": "Beginn der Tagesphasen",
+    "pf2e-weather-forge.calendarIntegration.active": "Calendar Forge aktiv",
+    "pf2e-weather-forge.calendarIntegration.fallback": "Interner Kalender als Fallback",
+    "pf2e-weather-forge.calendarIntegration.currentOpen": "Wetter für diese Tagesphase noch offen",
+    "pf2e-weather-forge.calendarIntegration.currentResolved": "Wetter für diese Tagesphase festgelegt",
+    "pf2e-weather-forge.calendarIntegration.prepareNext": "Nächste Tagesphase vorbereiten",
+    "pf2e-weather-forge.calendarIntegration.nextPrepared": "Vorschau für die nächste Tagesphase vorbereitet",
+    "pf2e-weather-forge.calendarIntegration.nextPhase": "Nächste Tagesphase",
+    "pf2e-weather-forge.calendarIntegration.previewCurrent": "Vorschau für die aktuelle Tagesphase",
+    "pf2e-weather-forge.calendarIntegration.previewNext": "Vorschau für die nächste Tagesphase",
+    "pf2e-weather-forge.calendarIntegration.noCurrentPreview": "Noch keine Vorschau für die aktuelle Tagesphase generiert.",
+    "pf2e-weather-forge.calendarIntegration.noNextPreview": "Noch keine Vorschau für die nächste Tagesphase vorbereitet.",
+    "pf2e-weather-forge.calendarIntegration.queuedHint": "Diese Vorschau ist vorbereitet und wird erst beim Erreichen der nächsten Tagesphase zum aktuellen Wetterkandidaten.",
+    "pf2e-weather-forge.calendarIntegration.timeOwned": "Datum und Uhrzeit kommen aus Calendar Forge. Weather Forge verändert die Weltzeit in diesem Modus nicht.",
+    "pf2e-weather-forge.calendarIntegration.source.auto": "Automatisch",
+    "pf2e-weather-forge.calendarIntegration.source.calendarForge": "Calendar Forge",
+    "pf2e-weather-forge.calendarIntegration.source.internal": "Interner Kalender",
+    "pf2e-weather-forge.calendarIntegration.defaultRegion": "Weltstandard / Standardregion",
+    "pf2e-weather-forge.calendarIntegration.defaultMoon": "Erster verfügbarer Mond",
+    "pf2e-weather-forge.calendarIntegration.automation.manual": "Manuell für die aktuelle Phase",
+    "pf2e-weather-forge.calendarIntegration.automation.automatic": "Vollautomatisch",
+    "pf2e-weather-forge.settings.calendarSourceMode.name": "Kalenderquelle",
+    "pf2e-weather-forge.settings.calendarSourceMode.hint": "Verwendet Calendar Forge, wenn verfügbar, oder den bisherigen internen Kalender als Fallback.",
+    "pf2e-weather-forge.settings.calendarForgeRegionId.name": "Calendar-Forge-Region",
+    "pf2e-weather-forge.settings.calendarForgeRegionId.hint": "Region, aus der Datum, Jahreszeit und lokale Uhrzeit gelesen werden.",
+    "pf2e-weather-forge.settings.calendarForgeMoonId.name": "Weather-Forge-Mond",
+    "pf2e-weather-forge.settings.calendarForgeMoonId.hint": "Mond, dessen Phase Weather Forge verwendet. Leer bedeutet erster verfügbarer Mond.",
+    "pf2e-weather-forge.settings.daypartAutomationMode.name": "Tagesphasen-Automatik",
+    "pf2e-weather-forge.settings.daypartAutomationMode.hint": "Legt fest, ob die aktuell erreichte Tagesphase manuell oder automatisch aufgelöst wird.",
+    "pf2e-weather-forge.settings.daypartBoundaries.name": "Tagesphasengrenzen",
+    "pf2e-weather-forge.settings.daypartBoundaries.hint": "Lokale Stunden, ab denen Morgen, Mittag, Nachmittag, Abend und Nacht beginnen.",
+    "pf2e-weather-forge.settings.calendarDrivenState.name": "Calendar-Forge-Laufzeitstatus",
+    "pf2e-weather-forge.settings.calendarDrivenState.hint": "Interner Status für phasenweise Wettersimulation entlang der Foundry-Weltzeit.",
+    "pf2e-weather-forge.notification.daypartReached": "Neue Tagesphase erreicht: {daypart}. Das Wetter für diese Phase kann jetzt erzeugt werden.",
+    "pf2e-weather-forge.notification.nextPreviewPrepared": "Vorschau für die nächste Tagesphase wurde vorbereitet.",
+    "pf2e-weather-forge.notification.calendarTimeRewound": "Die Weltzeit wurde zurückgesetzt. Das aktuelle Wetter bleibt bestehen und wurde auf die neue Tagesphase übertragen.",
+    "pf2e-weather-forge.notification.calendarIntegrationError": "Die Calendar-Forge-Wetterintegration konnte die Zeitänderung nicht verarbeiten. Weather Forge bleibt auf dem letzten Wetterzustand."
+  },
+  en: {
+    "pf2e-weather-forge.calendarIntegration.title": "Calendar Forge Integration",
+    "pf2e-weather-forge.calendarIntegration.source": "Calendar source",
+    "pf2e-weather-forge.calendarIntegration.region": "Calendar Forge region",
+    "pf2e-weather-forge.calendarIntegration.moon": "Moon used by Weather Forge",
+    "pf2e-weather-forge.calendarIntegration.mode": "Weather change on a new daypart",
+    "pf2e-weather-forge.calendarIntegration.dayparts": "Daypart start times",
+    "pf2e-weather-forge.calendarIntegration.active": "Calendar Forge active",
+    "pf2e-weather-forge.calendarIntegration.fallback": "Internal calendar fallback",
+    "pf2e-weather-forge.calendarIntegration.currentOpen": "Weather for this daypart is still unresolved",
+    "pf2e-weather-forge.calendarIntegration.currentResolved": "Weather for this daypart is resolved",
+    "pf2e-weather-forge.calendarIntegration.prepareNext": "Prepare next daypart",
+    "pf2e-weather-forge.calendarIntegration.nextPrepared": "Preview for the next daypart is prepared",
+    "pf2e-weather-forge.calendarIntegration.nextPhase": "Next daypart",
+    "pf2e-weather-forge.calendarIntegration.previewCurrent": "Preview for the current daypart",
+    "pf2e-weather-forge.calendarIntegration.previewNext": "Preview for the next daypart",
+    "pf2e-weather-forge.calendarIntegration.noCurrentPreview": "No preview has been generated for the current daypart yet.",
+    "pf2e-weather-forge.calendarIntegration.noNextPreview": "No preview has been prepared for the next daypart yet.",
+    "pf2e-weather-forge.calendarIntegration.queuedHint": "This preview is prepared and becomes the current weather candidate when the next daypart is reached.",
+    "pf2e-weather-forge.calendarIntegration.timeOwned": "Date and time come from Calendar Forge. Weather Forge does not advance world time in this mode.",
+    "pf2e-weather-forge.calendarIntegration.source.auto": "Automatic",
+    "pf2e-weather-forge.calendarIntegration.source.calendarForge": "Calendar Forge",
+    "pf2e-weather-forge.calendarIntegration.source.internal": "Internal calendar",
+    "pf2e-weather-forge.calendarIntegration.defaultRegion": "World default / default region",
+    "pf2e-weather-forge.calendarIntegration.defaultMoon": "First available moon",
+    "pf2e-weather-forge.calendarIntegration.automation.manual": "Manual for current daypart",
+    "pf2e-weather-forge.calendarIntegration.automation.automatic": "Fully automatic",
+    "pf2e-weather-forge.settings.calendarSourceMode.name": "Calendar source",
+    "pf2e-weather-forge.settings.calendarSourceMode.hint": "Uses Calendar Forge when available, otherwise keeps the existing internal calendar as a fallback.",
+    "pf2e-weather-forge.settings.calendarForgeRegionId.name": "Calendar Forge region",
+    "pf2e-weather-forge.settings.calendarForgeRegionId.hint": "Region from which date, season, and local clock time are read.",
+    "pf2e-weather-forge.settings.calendarForgeMoonId.name": "Weather Forge moon",
+    "pf2e-weather-forge.settings.calendarForgeMoonId.hint": "Moon phase Weather Forge uses. Empty means the first available moon.",
+    "pf2e-weather-forge.settings.daypartAutomationMode.name": "Daypart automation",
+    "pf2e-weather-forge.settings.daypartAutomationMode.hint": "Controls whether the currently reached daypart is resolved manually or automatically.",
+    "pf2e-weather-forge.settings.daypartBoundaries.name": "Daypart boundaries",
+    "pf2e-weather-forge.settings.daypartBoundaries.hint": "Local hours at which morning, noon, afternoon, evening, and night begin.",
+    "pf2e-weather-forge.settings.calendarDrivenState.name": "Calendar Forge runtime state",
+    "pf2e-weather-forge.settings.calendarDrivenState.hint": "Internal state for daypart-by-daypart weather simulation along Foundry world time.",
+    "pf2e-weather-forge.notification.daypartReached": "New daypart reached: {daypart}. Weather for this daypart can now be generated.",
+    "pf2e-weather-forge.notification.nextPreviewPrepared": "Preview for the next daypart has been prepared.",
+    "pf2e-weather-forge.notification.calendarTimeRewound": "World time was moved backwards. Current weather was kept and carried into the new daypart.",
+    "pf2e-weather-forge.notification.calendarIntegrationError": "Calendar Forge weather integration could not process the time change. Weather Forge kept the last weather state."
+  }
+};
+
+function weatherForgeFallbackDictionary() {
+  const lang = game?.i18n?.lang ?? "en";
+  const primary = WEATHER_FORGE_TRANSLATIONS[lang]
+    ?? WEATHER_FORGE_TRANSLATIONS[lang?.split("-")?.[0]]
+    ?? WEATHER_FORGE_TRANSLATIONS.en
+    ?? {};
+  const integration = WEATHER_FORGE_INTEGRATION_TRANSLATIONS[lang]
+    ?? WEATHER_FORGE_INTEGRATION_TRANSLATIONS[lang?.split("-")?.[0]]
+    ?? WEATHER_FORGE_INTEGRATION_TRANSLATIONS.en
+    ?? {};
+  return { ...primary, ...integration };
+}
+
 export function installWeatherForgeLocalizationFallback(moduleId) {
   if (game.i18n.__pf2eWeatherForgeFallbackInstalled) return;
 
@@ -480,17 +589,13 @@ export function installWeatherForgeLocalizationFallback(moduleId) {
   const originalFormat = game.i18n.format?.bind(game.i18n);
 
   function getDictionary() {
-    const lang = game.i18n.lang ?? "en";
-    return WEATHER_FORGE_TRANSLATIONS[lang]
-      ?? WEATHER_FORGE_TRANSLATIONS[lang?.split("-")?.[0]]
-      ?? WEATHER_FORGE_TRANSLATIONS.en
-      ?? {};
+    return weatherForgeFallbackDictionary();
   }
 
   function fallbackLocalize(key) {
     if (!String(key).startsWith(moduleId)) return key;
     const dictionary = getDictionary();
-    return dictionary[key] ?? WEATHER_FORGE_TRANSLATIONS.en?.[key] ?? key;
+    return dictionary[key] ?? WEATHER_FORGE_INTEGRATION_TRANSLATIONS.en?.[key] ?? WEATHER_FORGE_TRANSLATIONS.en?.[key] ?? key;
   }
 
   game.i18n.localize = function patchedWeatherForgeLocalize(key) {
@@ -519,17 +624,13 @@ export function installWeatherForgeLocalizationFallback(moduleId) {
 
 export function weatherForgeLocalize(moduleId, key) {
   const rawKey = String(key ?? "");
-  const lang = game?.i18n?.lang ?? "en";
-  const dictionary = WEATHER_FORGE_TRANSLATIONS[lang]
-    ?? WEATHER_FORGE_TRANSLATIONS[lang?.split("-")?.[0]]
-    ?? WEATHER_FORGE_TRANSLATIONS.en
-    ?? {};
+  const dictionary = weatherForgeFallbackDictionary();
 
   const foundryLocalized = game?.i18n?.localize?.(rawKey);
   if (foundryLocalized && foundryLocalized !== rawKey) return foundryLocalized;
 
   if (!rawKey.startsWith(moduleId)) return rawKey;
-  return dictionary[rawKey] ?? WEATHER_FORGE_TRANSLATIONS.en?.[rawKey] ?? rawKey;
+  return dictionary[rawKey] ?? WEATHER_FORGE_INTEGRATION_TRANSLATIONS.en?.[rawKey] ?? WEATHER_FORGE_TRANSLATIONS.en?.[rawKey] ?? rawKey;
 }
 
 export function weatherForgeFormat(moduleId, key, data = {}) {

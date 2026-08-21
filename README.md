@@ -1,8 +1,8 @@
 # PF2E Weather Forge
 
-A weather, forecast and calendar system for Pathfinder Second Edition Remastered on Foundry Virtual Tabletop.
+A weather and forecast simulation for Pathfinder Second Edition Remastered on Foundry Virtual Tabletop, with optional Calendar Forge integration and a built-in calendar fallback.
 
-PF2E Weather Forge provides persistent weather generation, an integrated Golarion calendar, weather history, forecasting, climate zones, extreme weather events and chat integration without requiring external calendar modules.
+PF2E Weather Forge provides persistent, evolving weather generation, weather history, forecasting, climate zones, extreme weather events and chat integration. When Calendar Forge is active it can read date, local time, season and moon phase directly from that module; without Calendar Forge, the existing internal Golarion calendar continues to work as before.
 
 
 
@@ -27,25 +27,26 @@ PF2E Weather Forge provides persistent weather generation, an integrated Golario
 * Extreme weather events
 * Multi-stage weather systems
 
-### Calendar Forge
+### Calendar & Daypart Integration
 
-Built-in Golarion calendar including:
+Weather Forge can use **Calendar Forge** as its authoritative calendar source. In that mode it reads:
 
-* Weekday
-* Day of month
-* Month
-* Year
+* Date and local clock time
 * Season
 * Moon phase
-* Time of day
+* Calendar / regional context
 
-Supported times of day:
+Weather Forge never advances Calendar Forge time. Instead it reacts when Foundry world time crosses configured daypart boundaries. The defaults are:
 
-* Morning
-* Noon
-* Afternoon
-* Evening
-* Night
+* Morning 05:00
+* Noon 11:00
+* Afternoon 14:00
+* Evening 18:00
+* Night 22:00
+
+Skipped dayparts are resolved automatically and chronologically so weather continues to evolve rather than jumping directly from the old state to the new one. Only the currently reached daypart remains open for manual generation. Once it is resolved, a preview for the next daypart can be prepared in advance.
+
+If Calendar Forge is disabled or unavailable, Weather Forge uses its existing internal Golarion calendar and time controls unchanged.
 
 ### Forecast System
 

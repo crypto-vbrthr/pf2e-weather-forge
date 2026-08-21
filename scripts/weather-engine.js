@@ -389,6 +389,40 @@ export function createInitialWeatherState(climateZone = "temperate", calendar = 
   return weather;
 }
 
+export function generateWeatherForTarget(current, targetCalendar = {}, settings = {}) {
+  const climateZone = settings.climateZone || current.climateZone || "temperate";
+  const climate = CLIMATE_ZONES[climateZone] ?? CLIMATE_ZONES.temperate;
+  const targetSegment = TIME_SEGMENTS.includes(targetCalendar.timeSegment) ? targetCalendar.timeSegment : getNextTimeSegment(current.timeSegment);
+  const target = {
+    ...current,
+    ...targetCalendar,
+    timeSegment: targetSegment,
+    climateZone
+  };
+  const activeExtreme = progressExtremeWeather(current.extremeWeather) ?? maybeStartExtremeWeather(climate, settings, target);
+
+  let weather = {
+    ...target,
+    humidity: clamp((current.humidity ?? randomInt(...climate.humidity)) + randomInt(-8, 8), 0, 100),
+    cloudDensity: clamp((current.cloudDensity ?? 45) + randomInt(-18, 18), 0, 100),
+    windStrength: clamp((current.windStrength ?? 2) + randomInt(-2, 2), 0, 12),
+    extremeWeather: activeExtreme
+  };
+
+  const newDayStarted = dateKey(current) !== dateKey(weather) || weather.dailyProfile?.dateKey !== dateKey(weather);
+  weather.dailyProfile = ensureDailyProfile(weather, climate, activeExtreme, newDayStarted ? current.dailyProfile : weather.dailyProfile);
+  const forecastGuidance = (settings.forecast?.entries ?? []).find(entry => entry.dateKey === dateKey(weather));
+  weather = applyForecastGuidance(weather, forecastGuidance);
+  weather.temperature = getDailyTemperatureAtSegment(weather.dailyProfile, weather.timeSegment);
+
+  const forecastRainBias = forecastGuidance ? Math.round(((forecastGuidance.rainRisk ?? climate.rainChance) - climate.rainChance) * 0.65) : 0;
+  weather.precipitation = choosePrecipitation(clamp(climate.rainChance + forecastRainBias, 0, 95), weather.cloudDensity, weather.extremeWeather, weather);
+  weather = applyExtremeModifiers(weather);
+  weather = clampTemperatureForClimate(weather, climate);
+  weather.descriptionKey = descriptionKeyFor(weather);
+  return weather;
+}
+
 export function generateNextWeather(current, settings = {}) {
   const climateZone = settings.climateZone || current.climateZone || "temperate";
   const climate = CLIMATE_ZONES[climateZone] ?? CLIMATE_ZONES.temperate;

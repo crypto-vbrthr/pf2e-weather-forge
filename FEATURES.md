@@ -48,7 +48,7 @@ Each climate zone influences:
 
 # Time of Day System
 
-Weather is generated for individual times of day:
+Weather is generated for five dayparts:
 
 * Morning
 * Noon
@@ -56,7 +56,7 @@ Weather is generated for individual times of day:
 * Evening
 * Night
 
-Weather transitions between time periods remain consistent and believable.
+With Calendar Forge active these are clock-driven intervals. Their start hours are configurable and default to 05:00, 11:00, 14:00, 18:00 and 22:00. Weather Forge observes Foundry world time rather than changing it. If a time jump crosses several dayparts, every completed intermediate daypart is generated in sequence so the weather model keeps its continuity.
 
 ---
 
@@ -79,21 +79,16 @@ Typical behavior:
 
 ---
 
-# Calendar Forge
+# Calendar Integration
 
-Weather Forge includes a fully integrated Golarion calendar system.
+Weather Forge supports two calendar sources:
 
-Tracked values:
+* Calendar Forge, when installed and selected
+* The original internal Golarion calendar as a complete fallback
 
-* Weekday
-* Day of month
-* Month
-* Year
-* Season
-* Moon phase
-* Time of day
+Calendar Forge supplies date, local time, season and moon phase. Weather Forge can select a Calendar Forge region and a primary moon. The integration is optional; no external calendar module is required.
 
-No external calendar module is required.
+In manual mode the GM generates and accepts weather only for the currently reached daypart. Once resolved, the next daypart can be rolled repeatedly as a prepared preview without applying it early. In automatic mode the current daypart is generated and applied as soon as its boundary is reached.
 
 ---
 

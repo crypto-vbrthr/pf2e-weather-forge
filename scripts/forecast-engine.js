@@ -53,8 +53,7 @@ function chooseAtmosphericDriver(current, dayIndex, climateZone) {
   return { type: "stableAir", strength: 1 };
 }
 
-function buildForecastEntry(current, baseCalendar, dayIndex, previousAverage) {
-  const calendar = advanceCalendarDate(baseCalendar, dayIndex);
+function buildForecastEntryForCalendar(current, calendar, dayIndex, previousAverage) {
   const climateZone = current.climateZone ?? "temperate";
   const climate = CLIMATE_ZONES[climateZone] ?? CLIMATE_ZONES.temperate;
   const [seasonalMin, seasonalMax] = getSeasonalRange(climateZone, calendar.season);
@@ -153,12 +152,30 @@ export function generateForecast(currentWeather, days = 3) {
   let previousAverage = averageTempFromWeather(currentWeather);
   const entries = [];
   for (let day = 1; day <= count; day += 1) {
-    const entry = buildForecastEntry(currentWeather, baseCalendar, day, previousAverage);
+    const entry = buildForecastEntryForCalendar(currentWeather, advanceCalendarDate(baseCalendar, day), day, previousAverage);
     entries.push(entry);
     previousAverage = Math.round((entry.minTemp + entry.maxTemp) / 2);
   }
   return {
     generatedFrom: dateKey(baseCalendar),
+    climateZone: currentWeather.climateZone ?? "temperate",
+    days: count,
+    entries
+  };
+}
+
+export function generateForecastFromCalendars(currentWeather, calendars = []) {
+  const count = clamp(calendars.length, 1, 7);
+  let previousAverage = averageTempFromWeather(currentWeather);
+  const entries = [];
+  for (let index = 0; index < count; index += 1) {
+    const calendar = calendars[index];
+    const entry = buildForecastEntryForCalendar(currentWeather, calendar, index + 1, previousAverage);
+    entries.push(entry);
+    previousAverage = Math.round((entry.minTemp + entry.maxTemp) / 2);
+  }
+  return {
+    generatedFrom: dateKey(extractCalendarFromWeather(currentWeather)),
     climateZone: currentWeather.climateZone ?? "temperate",
     days: count,
     entries

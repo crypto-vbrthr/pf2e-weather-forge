@@ -2,8 +2,10 @@ import { MODULE_ID, defaultWeatherState } from "./weather-engine.js";
 import { PF2eWeatherForgeApp } from "./weather-app.js";
 import { defaultCalendarState, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate } from "./calendar-engine.js";
 import { defaultWeatherHistory, getWeatherHistory, setWeatherHistory, clearWeatherHistory } from "./history-engine.js";
-import { defaultForecastState, generateForecast, getForecastState, setForecastState } from "./forecast-engine.js";
-import { installWeatherForgeLocalizationFallback, weatherForgeLocalize, weatherForgeFormat } from "./localization.js";
+import { defaultForecastState, generateForecast, generateForecastFromCalendars, getForecastState, setForecastState } from "./forecast-engine.js";
+import { installWeatherForgeLocalizationFallback } from "./localization.js";
+import { DEFAULT_DAYPART_BOUNDARIES, effectiveCalendarSourceMode, getCalendarForgeApi, calendarForgeOptions, getCalendarForgeSnapshot } from "./calendar-source.js";
+import { defaultCalendarDrivenState, initializeCalendarDrivenWeather, processCalendarWorldTimeChange } from "./daypart-automation.js";
 
 
 function isSettingRegistered(key) {
@@ -144,6 +146,49 @@ function registerWeatherForgeSettings() {
       }
     });
   }
+
+  if (!isSettingRegistered("calendarSourceMode")) {
+    game.settings.register(MODULE_ID, "calendarSourceMode", {
+      name: `${MODULE_ID}.settings.calendarSourceMode.name`,
+      hint: `${MODULE_ID}.settings.calendarSourceMode.hint`,
+      scope: "world", config: false, type: String, default: "auto"
+    });
+  }
+  if (!isSettingRegistered("calendarForgeRegionId")) {
+    game.settings.register(MODULE_ID, "calendarForgeRegionId", {
+      name: `${MODULE_ID}.settings.calendarForgeRegionId.name`,
+      hint: `${MODULE_ID}.settings.calendarForgeRegionId.hint`,
+      scope: "world", config: false, type: String, default: ""
+    });
+  }
+  if (!isSettingRegistered("calendarForgeMoonId")) {
+    game.settings.register(MODULE_ID, "calendarForgeMoonId", {
+      name: `${MODULE_ID}.settings.calendarForgeMoonId.name`,
+      hint: `${MODULE_ID}.settings.calendarForgeMoonId.hint`,
+      scope: "world", config: false, type: String, default: ""
+    });
+  }
+  if (!isSettingRegistered("daypartAutomationMode")) {
+    game.settings.register(MODULE_ID, "daypartAutomationMode", {
+      name: `${MODULE_ID}.settings.daypartAutomationMode.name`,
+      hint: `${MODULE_ID}.settings.daypartAutomationMode.hint`,
+      scope: "world", config: false, type: String, default: "manual"
+    });
+  }
+  if (!isSettingRegistered("daypartBoundaries")) {
+    game.settings.register(MODULE_ID, "daypartBoundaries", {
+      name: `${MODULE_ID}.settings.daypartBoundaries.name`,
+      hint: `${MODULE_ID}.settings.daypartBoundaries.hint`,
+      scope: "world", config: false, type: Object, default: { ...DEFAULT_DAYPART_BOUNDARIES }
+    });
+  }
+  if (!isSettingRegistered("calendarDrivenState")) {
+    game.settings.register(MODULE_ID, "calendarDrivenState", {
+      name: `${MODULE_ID}.settings.calendarDrivenState.name`,
+      hint: `${MODULE_ID}.settings.calendarDrivenState.hint`,
+      scope: "world", config: false, type: Object, default: defaultCalendarDrivenState()
+    });
+  }
 }
 
 let weatherForgeApp;
@@ -198,44 +243,86 @@ function addWeatherForgeSceneControl(controls) {
 Hooks.once("init", () => {
   installWeatherForgeLocalizationFallback(MODULE_ID);
 
-  // Foundry registers the built-in Handlebars localize helper early. In some
-  // versions it keeps a reference to the original i18n function, so our fallback
-  // would not be used inside templates. Re-registering the helper here makes
-  // template localization use the patched game.i18n.localize as well.
-  try {
-    Handlebars.registerHelper("wf", (key) => weatherForgeLocalize(MODULE_ID, key));
-    Handlebars.registerHelper("wff", (key, options) => weatherForgeFormat(MODULE_ID, key, options?.hash ?? {}));
-  } catch (error) {
-    console.warn(`${MODULE_ID} | Could not register Weather Forge localization helpers`, error);
-  }
 
   registerWeatherForgeSettings();
 });
 
 Hooks.on("getSceneControlButtons", addWeatherForgeSceneControl);
 
-Hooks.once("ready", () => {
+function isPrimaryActiveGM() {
+  if (!game.user?.isGM) return false;
+  const activeGM = game.users?.activeGM;
+  if (activeGM) return activeGM.id === game.user.id;
+  const first = [...(game.users ?? [])].find(user => user.active && user.isGM);
+  return !first || first.id === game.user.id;
+}
+
+let calendarUpdateQueue = Promise.resolve();
+Hooks.on("updateWorldTime", (worldTime, delta) => {
+  if (!isPrimaryActiveGM()) return;
+  calendarUpdateQueue = calendarUpdateQueue.then(async () => {
+    try {
+      await processCalendarWorldTimeChange(worldTime, delta);
+      if (weatherForgeApp?.rendered) weatherForgeApp.render();
+    } catch (error) {
+      console.error(`${MODULE_ID} | Calendar-driven weather update failed`, error);
+      ui.notifications?.error?.(game.i18n.localize(`${MODULE_ID}.notification.calendarIntegrationError`));
+    }
+  });
+});
+
+Hooks.on("calendarForgeReady", async () => {
+  if (!isPrimaryActiveGM()) return;
+  try { await initializeCalendarDrivenWeather(); }
+  catch (error) { console.warn(`${MODULE_ID} | Calendar Forge initialization failed`, error); }
+});
+
+async function generateForecastForCurrentSource(days = 3) {
+  const currentStored = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+  if (effectiveCalendarSourceMode() !== "calendarForge") return generateForecast(currentStored, days);
+  const api = getCalendarForgeApi();
+  if (!api) return generateForecast(currentStored, days);
+  const context = await api.getTemporalContext(calendarForgeOptions());
+  const time = context.raw?.calendar?.time ?? {};
+  const secondsPerDay = Number(time.secondsPerMinute ?? 60) * Number(time.minutesPerHour ?? 60) * Number(time.hoursPerDay ?? 24);
+  const currentCalendar = await getCalendarForgeSnapshot({ fallbackWeather: currentStored });
+  const current = { ...currentStored, ...currentCalendar };
+  const calendars = [];
+  for (let day = 1; day <= Math.max(1, Math.min(7, Number(days) || 3)); day += 1) {
+    calendars.push(await getCalendarForgeSnapshot({ worldTime: Number(game.time.worldTime) + day * secondsPerDay, fallbackWeather: current }));
+  }
+  return generateForecastFromCalendars(current, calendars);
+}
+
+Hooks.once("ready", async () => {
   game.modules.get(MODULE_ID).api = {
     open: openWeatherForge,
     app: () => weatherForgeApp,
     getWeather: () => game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(),
-    getCalendar: getCalendarState,
+    getCalendar: async () => effectiveCalendarSourceMode() === "calendarForge"
+      ? (await getCalendarForgeSnapshot({ fallbackWeather: game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState() }))
+      : getCalendarState(),
     setCalendar: setCalendarState,
-    nextTime: async () => setCalendarState(advanceTimeSegment(await getCalendarState())),
-    previousTime: async () => setCalendarState(rewindTimeSegment(await getCalendarState())),
-    nextDay: async () => setCalendarState(advanceCalendarDate(await getCalendarState(), 1)),
-    previousDay: async () => setCalendarState(advanceCalendarDate(await getCalendarState(), -1)),
+    nextTime: async () => effectiveCalendarSourceMode() === "calendarForge" ? null : setCalendarState(advanceTimeSegment(await getCalendarState())),
+    previousTime: async () => effectiveCalendarSourceMode() === "calendarForge" ? null : setCalendarState(rewindTimeSegment(await getCalendarState())),
+    nextDay: async () => effectiveCalendarSourceMode() === "calendarForge" ? null : setCalendarState(advanceCalendarDate(await getCalendarState(), 1)),
+    previousDay: async () => effectiveCalendarSourceMode() === "calendarForge" ? null : setCalendarState(advanceCalendarDate(await getCalendarState(), -1)),
     getHistory: getWeatherHistory,
     setHistory: setWeatherHistory,
     clearHistory: clearWeatherHistory,
     getForecast: getForecastState,
     setForecast: setForecastState,
     generateForecast: async (days = 3) => {
-      const forecast = generateForecast(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(), days);
+      const forecast = await generateForecastForCurrentSource(days);
       await setForecastState(forecast);
       return forecast;
     }
   };
+
+  if (isPrimaryActiveGM() && effectiveCalendarSourceMode() === "calendarForge") {
+    try { await initializeCalendarDrivenWeather(); }
+    catch (error) { console.warn(`${MODULE_ID} | Calendar Forge integration could not initialize`, error); }
+  }
 
   console.log(`${MODULE_ID} | Ready`);
 });

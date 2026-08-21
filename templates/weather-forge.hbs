@@ -54,16 +54,40 @@
         <h2>{{labels.ui_weatherGeneration}}</h2>
         <div class="calendar-summary">
           <strong>{{calendar.weekdayLabel}}, {{calendar.dayOfMonth}}. {{calendar.monthLabel}} {{calendar.year}}</strong><br>
-          <span>{{calendar.timeSegmentLabel}} · {{calendar.seasonLabel}} · {{calendar.moonPhaseLabel}}</span>
+          <span>{{#if calendarIntegration.active}}{{calendar.formattedTime}} · {{/if}}{{calendar.timeSegmentLabel}} · {{calendar.seasonLabel}} · {{calendar.moonPhaseLabel}}</span>
+          {{#if calendarIntegration.active}}
+            <div class="calendar-source-badge"><i class="fas fa-calendar-days"></i> {{labels.calendarIntegration_active}}</div>
+          {{/if}}
         </div>
 
-        <p class="weather-hint">{{labels.ui_settingsMovedHint}}</p>
+        {{#if calendarIntegration.active}}
+          <div class="daypart-status {{#if calendarIntegration.resolved}}is-resolved{{else}}is-open{{/if}}">
+            <strong>{{calendarIntegration.currentSegmentLabel}}</strong>
+            <span>{{#if calendarIntegration.resolved}}{{labels.calendarIntegration_currentResolved}}{{else}}{{labels.calendarIntegration_currentOpen}}{{/if}}</span>
+          </div>
+          <p class="weather-hint">{{labels.calendarIntegration_timeOwned}}</p>
+        {{else}}
+          <p class="weather-hint">{{labels.ui_settingsMovedHint}}</p>
+        {{/if}}
 
         <div class="weather-actions">
-          <button type="button" data-action="generate"><i class="fas fa-dice-d20"></i> {{labels.ui_generate}}</button>
-          <button type="button" data-action="accept" {{#unless preview}}disabled{{/unless}}><i class="fas fa-check"></i> {{labels.ui_accept}}</button>
+          {{#if calendarIntegration.active}}
+            <button type="button" data-action="generate" {{#unless calendarIntegration.canGenerateCurrent}}disabled{{/unless}}><i class="fas fa-dice-d20"></i> {{labels.ui_generate}}</button>
+            <button type="button" data-action="accept" {{#unless calendarIntegration.canAcceptCurrent}}disabled{{/unless}}><i class="fas fa-check"></i> {{labels.ui_accept}}</button>
+            <button type="button" data-action="prepareNextPreview" {{#unless calendarIntegration.canPrepareNext}}disabled{{/unless}}><i class="fas fa-forward"></i> {{labels.calendarIntegration_prepareNext}}</button>
+          {{else}}
+            <button type="button" data-action="generate"><i class="fas fa-dice-d20"></i> {{labels.ui_generate}}</button>
+            <button type="button" data-action="accept" {{#unless preview}}disabled{{/unless}}><i class="fas fa-check"></i> {{labels.ui_accept}}</button>
+          {{/if}}
           <button type="button" data-action="reset"><i class="fas fa-undo"></i> {{labels.ui_reset}}</button>
         </div>
+
+        {{#if calendarIntegration.active}}
+          <div class="next-daypart-box">
+            <strong>{{labels.calendarIntegration_nextPhase}}:</strong> {{calendarIntegration.nextSegmentLabel}} · {{calendarIntegration.nextTimeLabel}}
+            {{#if calendarIntegration.queued}}<div><i class="fas fa-check"></i> {{labels.calendarIntegration_nextPrepared}}</div>{{/if}}
+          </div>
+        {{/if}}
 
         <hr>
 
@@ -76,34 +100,39 @@
 
       <article class="weather-panel preview">
         <h2>{{labels.ui_preview}}</h2>
-        {{#if preview}}
+        {{#if previewDisplay}}
+          <div class="preview-context {{#if previewIsQueued}}is-queued{{/if}}">
+            <i class="fas {{#if previewIsQueued}}fa-forward{{else}}fa-cloud-sun{{/if}}"></i>
+            <strong>{{previewContextLabel}}</strong>
+          </div>
           <div class="weather-card">
             <div class="weather-headline">
-              <strong>{{preview.timeSegmentLabel}}</strong>
-              <span>{{preview.seasonLabel}}</span>
+              <strong>{{previewDisplay.timeSegmentLabel}}</strong>
+              <span>{{previewDisplay.seasonLabel}}</span>
             </div>
-
-            <p class="weather-description">{{preview.description}}</p>
-
+            <p class="weather-description">{{previewDisplay.description}}</p>
             <dl class="weather-values">
-              <dt>{{labels.field_temperature}}</dt><dd>{{preview.temperature}} °C</dd>
-              <dt>{{labels.field_dailyMinMax}}</dt><dd>{{preview.dailyMinTemp}} / {{preview.dailyMaxTemp}} °C</dd>
-              <dt>{{labels.field_trend}}</dt><dd>{{preview.trendLabel}}</dd>
-              <dt>{{labels.field_precipitation}}</dt><dd>{{preview.precipitationLabel}}</dd>
-              <dt>{{labels.field_humidity}}</dt><dd>{{preview.humidity}} % · {{preview.humidityDescription}}</dd>
-              <dt>{{labels.field_cloudDensity}}</dt><dd>{{preview.cloudDensity}} % · {{preview.cloudDensityDescription}}</dd>
-              <dt>{{labels.field_windStrength}}</dt><dd>{{preview.windStrength}} · {{preview.windStrengthDescription}}</dd>
-              <dt>{{labels.field_weekday}}</dt><dd>{{preview.weekdayLabel}}</dd>
-              <dt>{{labels.field_dayOfMonth}}</dt><dd>{{preview.dayOfMonth}}</dd>
-              <dt>{{labels.field_month}}</dt><dd>{{preview.monthLabel}}</dd>
-              <dt>{{labels.field_year}}</dt><dd>{{preview.year}}</dd>
-              <dt>{{labels.field_moonPhase}}</dt><dd>{{preview.moonPhaseLabel}}</dd>
-              <dt>{{labels.field_climateZone}}</dt><dd>{{preview.climateZoneLabel}}</dd>
-              <dt>{{labels.field_extremeWeather}}</dt><dd>{{preview.extremeLabel}}</dd>
+              <dt>{{labels.field_temperature}}</dt><dd>{{previewDisplay.temperature}} °C</dd>
+              <dt>{{labels.field_dailyMinMax}}</dt><dd>{{previewDisplay.dailyMinTemp}} / {{previewDisplay.dailyMaxTemp}} °C</dd>
+              <dt>{{labels.field_trend}}</dt><dd>{{previewDisplay.trendLabel}}</dd>
+              <dt>{{labels.field_precipitation}}</dt><dd>{{previewDisplay.precipitationLabel}}</dd>
+              <dt>{{labels.field_humidity}}</dt><dd>{{previewDisplay.humidity}} % · {{previewDisplay.humidityDescription}}</dd>
+              <dt>{{labels.field_cloudDensity}}</dt><dd>{{previewDisplay.cloudDensity}} % · {{previewDisplay.cloudDensityDescription}}</dd>
+              <dt>{{labels.field_windStrength}}</dt><dd>{{previewDisplay.windStrength}} · {{previewDisplay.windStrengthDescription}}</dd>
+              <dt>{{labels.field_weekday}}</dt><dd>{{previewDisplay.weekdayLabel}}</dd>
+              <dt>{{labels.field_dayOfMonth}}</dt><dd>{{previewDisplay.dayOfMonth}}</dd>
+              <dt>{{labels.field_month}}</dt><dd>{{previewDisplay.monthLabel}}</dd>
+              <dt>{{labels.field_year}}</dt><dd>{{previewDisplay.year}}</dd>
+              <dt>{{labels.field_moonPhase}}</dt><dd>{{previewDisplay.moonPhaseLabel}}</dd>
+              <dt>{{labels.field_climateZone}}</dt><dd>{{previewDisplay.climateZoneLabel}}</dd>
+              <dt>{{labels.field_extremeWeather}}</dt><dd>{{previewDisplay.extremeLabel}}</dd>
             </dl>
           </div>
+          {{#if previewIsQueued}}
+            <p class="queued-preview-hint"><i class="fas fa-clock"></i> {{labels.calendarIntegration_queuedHint}}</p>
+          {{/if}}
         {{else}}
-          <p class="empty-preview">{{labels.ui_noPreview}}</p>
+          <p class="empty-preview">{{previewEmptyLabel}}</p>
         {{/if}}
       </article>
     </section>
@@ -167,7 +196,7 @@
           {{#each history.groups}}
             <details class="history-day" {{#if @first}}open{{/if}}>
               <summary>
-                <span class="history-date">{{weekdayLabel}}, {{dayOfMonth}}. {{monthLabel}} {{year}}</span>
+                <span class="history-date">{{#if displayDate}}{{displayDate}}{{else}}{{weekdayLabel}}, {{dayOfMonth}}. {{monthLabel}} {{year}}{{/if}}</span>
                 <span class="history-summary">{{summary}}</span>
               </summary>
 
@@ -243,59 +272,81 @@
 
       <article class="weather-panel settings-section">
         <h2>{{labels.settingsTab_calendarTitle}}</h2>
-        <div class="calendar-summary">
-          <strong>{{calendar.weekdayLabel}}, {{calendar.dayOfMonth}}. {{calendar.monthLabel}} {{calendar.year}}</strong><br>
-          <span>{{calendar.timeSegmentLabel}} · {{calendar.seasonLabel}} · {{calendar.moonPhaseLabel}}</span>
-        </div>
 
         <div class="form-group">
-          <label>{{labels.field_timeSegment}}</label>
-          <select name="calendarTimeSegment">
-            {{#each timeSegments}}
-              <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-            {{/each}}
+          <label>{{labels.calendarIntegration_source}}</label>
+          <select name="calendarSourceMode">
+            {{#each appSettings.calendarSourceModes}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
           </select>
         </div>
 
-        <div class="calendar-grid">
+        {{#unless appSettings.calendarForgeAvailable}}
+          <p class="weather-hint"><i class="fas fa-rotate-left"></i> {{labels.calendarIntegration_fallback}}</p>
+        {{/unless}}
+
+        {{#if appSettings.calendarForgeAvailable}}
+          <div class="calendar-grid">
+            <div class="form-group">
+              <label>{{labels.calendarIntegration_region}}</label>
+              <select name="calendarForgeRegionId">
+                {{#each appSettings.calendarForgeRegions}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>{{labels.calendarIntegration_moon}}</label>
+              <select name="calendarForgeMoonId">
+                {{#each appSettings.calendarForgeMoons}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+              </select>
+            </div>
+          </div>
+
           <div class="form-group">
-            <label>{{labels.field_weekday}}</label>
-            <select name="calendarWeekday">
-              {{#each weekdays}}
-                <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-              {{/each}}
+            <label>{{labels.calendarIntegration_mode}}</label>
+            <select name="daypartAutomationMode">
+              {{#each appSettings.daypartAutomationModes}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
             </select>
           </div>
 
-          <div class="form-group">
-            <label>{{labels.field_dayOfMonth}}</label>
-            <input type="number" name="calendarDayOfMonth" value="{{calendar.dayOfMonth}}" min="1" max="31">
+          <h3>{{labels.calendarIntegration_dayparts}}</h3>
+          <div class="daypart-boundary-grid">
+            <label>{{labels.time_morning}} <input type="number" name="daypartMorning" min="0" max="23" value="{{appSettings.daypartBoundaries.morning}}"></label>
+            <label>{{labels.time_noon}} <input type="number" name="daypartNoon" min="0" max="23" value="{{appSettings.daypartBoundaries.noon}}"></label>
+            <label>{{labels.time_afternoon}} <input type="number" name="daypartAfternoon" min="0" max="23" value="{{appSettings.daypartBoundaries.afternoon}}"></label>
+            <label>{{labels.time_evening}} <input type="number" name="daypartEvening" min="0" max="23" value="{{appSettings.daypartBoundaries.evening}}"></label>
+            <label>{{labels.time_night}} <input type="number" name="daypartNight" min="0" max="23" value="{{appSettings.daypartBoundaries.night}}"></label>
           </div>
+        {{/if}}
+
+        <div class="calendar-summary">
+          <strong>{{calendar.weekdayLabel}}, {{calendar.dayOfMonth}}. {{calendar.monthLabel}} {{calendar.year}}</strong><br>
+          <span>{{#if calendarIntegration.active}}{{calendar.formattedTime}} · {{/if}}{{calendar.timeSegmentLabel}} · {{calendar.seasonLabel}} · {{calendar.moonPhaseLabel}}</span>
         </div>
 
-        <div class="calendar-grid">
+        {{#if calendarIntegration.active}}
+          <p class="weather-hint"><i class="fas fa-lock"></i> {{labels.calendarIntegration_timeOwned}}</p>
+        {{else}}
           <div class="form-group">
-            <label>{{labels.field_month}}</label>
-            <select name="calendarMonth">
-              {{#each months}}
-                <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-              {{/each}}
+            <label>{{labels.field_timeSegment}}</label>
+            <select name="calendarTimeSegment">
+              {{#each timeSegments}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
             </select>
           </div>
-
-          <div class="form-group">
-            <label>{{labels.field_year}}</label>
-            <input type="number" name="calendarYear" value="{{calendar.year}}" min="1">
+          <div class="calendar-grid">
+            <div class="form-group"><label>{{labels.field_weekday}}</label><select name="calendarWeekday">{{#each weekdays}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></div>
+            <div class="form-group"><label>{{labels.field_dayOfMonth}}</label><input type="number" name="calendarDayOfMonth" value="{{calendar.dayOfMonth}}" min="1" max="31"></div>
           </div>
-        </div>
-
-        <div class="weather-actions compact">
-          <button type="button" data-action="previousTime"><i class="fas fa-chevron-left"></i> {{labels.ui_previousTime}}</button>
-          <button type="button" data-action="nextTime">{{labels.ui_nextTime}} <i class="fas fa-chevron-right"></i></button>
-          <button type="button" data-action="previousDay"><i class="fas fa-minus"></i> {{labels.ui_previousDay}}</button>
-          <button type="button" data-action="nextDay"><i class="fas fa-plus"></i> {{labels.ui_nextDay}}</button>
-          <button type="button" data-action="saveCalendar"><i class="fas fa-save"></i> {{labels.ui_saveCalendar}}</button>
-        </div>
+          <div class="calendar-grid">
+            <div class="form-group"><label>{{labels.field_month}}</label><select name="calendarMonth">{{#each months}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></div>
+            <div class="form-group"><label>{{labels.field_year}}</label><input type="number" name="calendarYear" value="{{calendar.year}}" min="1"></div>
+          </div>
+          <div class="weather-actions compact">
+            <button type="button" data-action="previousTime"><i class="fas fa-chevron-left"></i> {{labels.ui_previousTime}}</button>
+            <button type="button" data-action="nextTime">{{labels.ui_nextTime}} <i class="fas fa-chevron-right"></i></button>
+            <button type="button" data-action="previousDay"><i class="fas fa-minus"></i> {{labels.ui_previousDay}}</button>
+            <button type="button" data-action="nextDay"><i class="fas fa-plus"></i> {{labels.ui_nextDay}}</button>
+            <button type="button" data-action="saveCalendar"><i class="fas fa-save"></i> {{labels.ui_saveCalendar}}</button>
+          </div>
+        {{/if}}
       </article>
 
       <article class="weather-panel settings-section">
