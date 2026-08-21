@@ -330,3 +330,14 @@ Future versions may include:
 * Extended forecast models
 
 Feature availability may change between releases.
+
+## 0.8 Runtime hardening
+
+* Restart-safe daypart catch-up checkpoints
+* Safe abort for excessively large world-time jumps before partial weather is written
+* Midnight/date/season/moon metadata refresh within an unchanged daypart
+* Stale current-preview rejection
+* Source-weather and target-context validation for prepared next-daypart previews
+* Safe Calendar Forge provider-selection fallback
+* Calendar Forge ↔ internal calendar handoff hardening
+* Current Calendar Forge metadata in published weather reports

@@ -70,10 +70,43 @@ export function effectiveCalendarSourceMode() {
   return "internal";
 }
 
+function validProviderSelection(id, entries) {
+  if (!id) return "";
+  if (!Array.isArray(entries) || !entries.length) return id;
+  return entries.some(entry => entry?.id === id) ? id : "";
+}
+
 export function calendarForgeOptions(extra = {}) {
-  const regionId = String(setting("calendarForgeRegionId", "") ?? "").trim();
-  const moonId = String(setting("calendarForgeMoonId", "") ?? "").trim();
-  return { ...(regionId ? { regionId } : {}), ...(moonId ? { moonProfileIds: [moonId] } : {}), ...extra };
+  const requestedRegion = String(setting("calendarForgeRegionId", "") ?? "").trim();
+  const requestedMoon = String(setting("calendarForgeMoonId", "") ?? "").trim();
+
+  let regionId = requestedRegion;
+  let moonId = requestedMoon;
+  try {
+    const api = getCalendarForgeApi();
+    if (api) {
+      regionId = validProviderSelection(requestedRegion, api.regions?.list?.() ?? []);
+      moonId = validProviderSelection(requestedMoon, api.moonProfiles?.list?.() ?? []);
+    }
+  } catch (_) {}
+
+  return {
+    ...(regionId ? { regionId } : {}),
+    ...(moonId ? { moonProfileIds: [moonId] } : {}),
+    ...extra
+  };
+}
+
+export function calendarForgeRuntimeStatus() {
+  const configured = configuredCalendarSourceMode();
+  const available = isCalendarForgeAvailable();
+  const effective = effectiveCalendarSourceMode();
+  return {
+    configured,
+    available,
+    effective,
+    fallback: configured !== "internal" && effective === "internal"
+  };
 }
 
 export function mapSeasonId(id, fallback = "spring") {
@@ -247,7 +280,12 @@ export async function enumerateCalendarForgePhaseBoundaries(fromWorldTime, toWor
     phase = await getCalendarForgePhaseInfo(from);
     guard += 1;
   }
-  if (guard >= max) console.warn(`${MODULE_ID} | Calendar catch-up stopped after ${max} daypart boundaries.`);
+  if (guard >= max && phase?.nextBoundaryWorldTime <= to) {
+    const error = new RangeError(`Calendar Forge catch-up exceeds the safe limit of ${max} daypart boundaries.`);
+    error.code = "WEATHER_FORGE_CATCHUP_LIMIT";
+    error.boundaryLimit = max;
+    throw error;
+  }
   return result;
 }
 

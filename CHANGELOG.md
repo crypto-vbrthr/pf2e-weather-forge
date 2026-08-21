@@ -1,3 +1,27 @@
+# Changelog
+
+## v0.8.0 – Runtime & Edge-Case Hardening
+
+### Hardened
+
+* Restart-safe checkpoints after every fully resolved catch-up phase.
+* Oversized world-time jumps abort before any partial weather timeline is written.
+* Date, season and moon metadata refresh even when they change inside the same daypart, such as midnight during the night phase.
+* Current previews are rejected after their calendar context becomes stale.
+* Prepared next-daypart previews are bound to both source weather and target calendar context.
+* Stale Calendar Forge region or moon selections are ignored if provider content disappears.
+* Calendar Forge → internal fallback handoff preserves compatible Golarion dates and removes external-only metadata.
+* Internal → Calendar Forge switching starts a clean runtime state.
+* Reload resumes an unprocessed persisted world-time interval instead of silently moving the runtime cursor.
+* Published weather reports use the currently reached Calendar Forge daypart/date even while manual weather for that phase is still open.
+* Backward time movement clears future previews and carries current weather without rewriting history.
+
+### Compatibility
+
+* Calendar Forge remains optional.
+* The existing internal calendar remains the fallback.
+* Weather-generation and climate models are unchanged.
+
 # 0.7.3 – Daypart Preview Presentation Fix
 
 - Prepared weather for the next daypart is now shown as the full weather preview instead of a small summary below an empty-preview message.

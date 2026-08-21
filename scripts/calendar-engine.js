@@ -72,6 +72,41 @@ export function extractCalendarFromWeather(weather) {
   });
 }
 
+export function canAdoptWeatherIntoInternalCalendar(weather) {
+  return Boolean(
+    weather
+    && TIME_SEGMENTS.includes(weather.timeSegment)
+    && WEEKDAYS.includes(weather.weekday)
+    && MONTHS.includes(weather.month)
+    && Number.isFinite(Number(weather.year))
+    && Number(weather.dayOfMonth) >= 1
+  );
+}
+
+function stripExternalCalendarMetadata(weather) {
+  const cleaned = { ...(weather ?? {}) };
+  for (const key of [
+    "source", "worldTime", "hour", "minute", "second",
+    "weekdayLabel", "monthLabel", "moonPhaseLabel", "seasonLabel",
+    "moonId", "calendarId", "calendarLabel", "regionId", "regionLabel",
+    "formattedDate", "formattedTime", "calendarLabels",
+    "weatherForgeCalendarSource", "weatherForgeWorldTime",
+    "weatherForgePhaseKey", "weatherForgeResolution",
+    "weatherForgeContextSignature"
+  ]) delete cleaned[key];
+  return cleaned;
+}
+
+export async function adoptWeatherIntoInternalCalendarFallback(weather) {
+  if (!canAdoptWeatherIntoInternalCalendar(weather)) return false;
+  const calendar = extractCalendarFromWeather(weather);
+  const cleaned = applyCalendarToWeather(stripExternalCalendarMetadata(weather), calendar);
+  await game.settings.set(MODULE_ID, "calendarState", calendar);
+  await game.settings.set(MODULE_ID, "weatherState", cleaned);
+  await game.settings.set(MODULE_ID, "weatherPreview", null);
+  return calendar;
+}
+
 export function getNextTimeSegment(segment) {
   const index = indexOrZero(TIME_SEGMENTS, segment);
   return TIME_SEGMENTS[(index + 1) % TIME_SEGMENTS.length];

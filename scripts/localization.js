@@ -521,7 +521,10 @@ const WEATHER_FORGE_INTEGRATION_TRANSLATIONS = {
     "pf2e-weather-forge.notification.daypartReached": "Neue Tagesphase erreicht: {daypart}. Das Wetter für diese Phase kann jetzt erzeugt werden.",
     "pf2e-weather-forge.notification.nextPreviewPrepared": "Vorschau für die nächste Tagesphase wurde vorbereitet.",
     "pf2e-weather-forge.notification.calendarTimeRewound": "Die Weltzeit wurde zurückgesetzt. Das aktuelle Wetter bleibt bestehen und wurde auf die neue Tagesphase übertragen.",
-    "pf2e-weather-forge.notification.calendarIntegrationError": "Die Calendar-Forge-Wetterintegration konnte die Zeitänderung nicht verarbeiten. Weather Forge bleibt auf dem letzten Wetterzustand."
+    "pf2e-weather-forge.notification.calendarIntegrationError": "Die Calendar-Forge-Wetterintegration konnte die Zeitänderung nicht verarbeiten. Weather Forge bleibt auf dem letzten Wetterzustand.",
+    "pf2e-weather-forge.notification.currentPreviewStale": "Die Wettervorschau für die aktuelle Tagesphase wurde verworfen, weil sich Kalenderkontext oder Tagesphase inzwischen geändert haben.",
+    "pf2e-weather-forge.notification.queuedPreviewStale": "Die vorbereitete Vorschau für die nächste Tagesphase wurde verworfen, weil sich das Ausgangswetter oder der Kalenderkontext geändert hat.",
+    "pf2e-weather-forge.notification.catchupLimit": "Der Zeitsprung überschreitet die sichere Catch-up-Grenze der Weather Forge. Das Wetter wurde nicht teilweise fortgeschrieben; verwende einen kleineren Zeitsprung oder setze das aktuelle Wetter neu."
   },
   en: {
     "pf2e-weather-forge.calendarIntegration.title": "Calendar Forge Integration",
@@ -565,7 +568,10 @@ const WEATHER_FORGE_INTEGRATION_TRANSLATIONS = {
     "pf2e-weather-forge.notification.daypartReached": "New daypart reached: {daypart}. Weather for this daypart can now be generated.",
     "pf2e-weather-forge.notification.nextPreviewPrepared": "Preview for the next daypart has been prepared.",
     "pf2e-weather-forge.notification.calendarTimeRewound": "World time was moved backwards. Current weather was kept and carried into the new daypart.",
-    "pf2e-weather-forge.notification.calendarIntegrationError": "Calendar Forge weather integration could not process the time change. Weather Forge kept the last weather state."
+    "pf2e-weather-forge.notification.calendarIntegrationError": "Calendar Forge weather integration could not process the time change. Weather Forge kept the last weather state.",
+    "pf2e-weather-forge.notification.currentPreviewStale": "The weather preview for the current daypart was discarded because the calendar context or daypart changed.",
+    "pf2e-weather-forge.notification.queuedPreviewStale": "The prepared preview for the next daypart was discarded because the source weather or calendar context changed.",
+    "pf2e-weather-forge.notification.catchupLimit": "The time jump exceeds Weather Forge's safe catch-up limit. Weather was not partially advanced; use a smaller time jump or reset the current weather."
   }
 };
 

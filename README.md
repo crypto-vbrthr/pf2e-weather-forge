@@ -44,9 +44,9 @@ Weather Forge never advances Calendar Forge time. Instead it reacts when Foundry
 * Evening 18:00
 * Night 22:00
 
-Skipped dayparts are resolved automatically and chronologically so weather continues to evolve rather than jumping directly from the old state to the new one. Only the currently reached daypart remains open for manual generation. Once it is resolved, a preview for the next daypart can be prepared in advance.
+Skipped dayparts are resolved automatically and chronologically so weather continues to evolve rather than jumping directly from the old state to the new one. Only the currently reached daypart remains open for manual generation. Once it is resolved, a preview for the next daypart can be prepared in advance. Runtime checkpoints make catch-up restart-safe, and prepared previews are invalidated when their source weather or target calendar context changes.
 
-If Calendar Forge is disabled or unavailable, Weather Forge uses its existing internal Golarion calendar and time controls unchanged.
+If Calendar Forge is disabled or unavailable, Weather Forge uses its existing internal Golarion calendar and time controls unchanged. A compatible last Golarion date from Calendar Forge can seed the fallback so the calendar does not jump back to an older internal state.
 
 ### Forecast System
 

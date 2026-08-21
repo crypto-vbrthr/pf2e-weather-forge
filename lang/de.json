@@ -276,5 +276,8 @@
   "pf2e-weather-forge.calendarIntegration.previewNext": "Vorschau für die nächste Tagesphase",
   "pf2e-weather-forge.calendarIntegration.noCurrentPreview": "Noch keine Vorschau für die aktuelle Tagesphase generiert.",
   "pf2e-weather-forge.calendarIntegration.noNextPreview": "Noch keine Vorschau für die nächste Tagesphase vorbereitet.",
-  "pf2e-weather-forge.calendarIntegration.queuedHint": "Diese Vorschau ist vorbereitet und wird erst beim Erreichen der nächsten Tagesphase zum aktuellen Wetterkandidaten."
+  "pf2e-weather-forge.calendarIntegration.queuedHint": "Diese Vorschau ist vorbereitet und wird erst beim Erreichen der nächsten Tagesphase zum aktuellen Wetterkandidaten.",
+  "pf2e-weather-forge.notification.currentPreviewStale": "Die Wettervorschau für die aktuelle Tagesphase wurde verworfen, weil sich Kalenderkontext oder Tagesphase inzwischen geändert haben.",
+  "pf2e-weather-forge.notification.queuedPreviewStale": "Die vorbereitete Vorschau für die nächste Tagesphase wurde verworfen, weil sich das Ausgangswetter oder der Kalenderkontext geändert hat.",
+  "pf2e-weather-forge.notification.catchupLimit": "Der Zeitsprung überschreitet die sichere Catch-up-Grenze der Weather Forge. Das Wetter wurde nicht teilweise fortgeschrieben; verwende einen kleineren Zeitsprung oder setze das aktuelle Wetter neu."
 }

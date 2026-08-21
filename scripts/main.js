@@ -1,6 +1,6 @@
 import { MODULE_ID, defaultWeatherState } from "./weather-engine.js";
 import { PF2eWeatherForgeApp } from "./weather-app.js";
-import { defaultCalendarState, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate } from "./calendar-engine.js";
+import { defaultCalendarState, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, adoptWeatherIntoInternalCalendarFallback } from "./calendar-engine.js";
 import { defaultWeatherHistory, getWeatherHistory, setWeatherHistory, clearWeatherHistory } from "./history-engine.js";
 import { defaultForecastState, generateForecast, generateForecastFromCalendars, getForecastState, setForecastState } from "./forecast-engine.js";
 import { installWeatherForgeLocalizationFallback } from "./localization.js";
@@ -266,14 +266,17 @@ Hooks.on("updateWorldTime", (worldTime, delta) => {
       if (weatherForgeApp?.rendered) weatherForgeApp.render();
     } catch (error) {
       console.error(`${MODULE_ID} | Calendar-driven weather update failed`, error);
-      ui.notifications?.error?.(game.i18n.localize(`${MODULE_ID}.notification.calendarIntegrationError`));
+      const key = error?.code === "WEATHER_FORGE_CATCHUP_LIMIT"
+        ? `${MODULE_ID}.notification.catchupLimit`
+        : `${MODULE_ID}.notification.calendarIntegrationError`;
+      ui.notifications?.error?.(game.i18n.localize(key));
     }
   });
 });
 
 Hooks.on("calendarForgeReady", async () => {
   if (!isPrimaryActiveGM()) return;
-  try { await initializeCalendarDrivenWeather(); }
+  try { await processCalendarWorldTimeChange(game.time.worldTime, 0); }
   catch (error) { console.warn(`${MODULE_ID} | Calendar Forge initialization failed`, error); }
 });
 
@@ -319,9 +322,20 @@ Hooks.once("ready", async () => {
     }
   };
 
-  if (isPrimaryActiveGM() && effectiveCalendarSourceMode() === "calendarForge") {
-    try { await initializeCalendarDrivenWeather(); }
-    catch (error) { console.warn(`${MODULE_ID} | Calendar Forge integration could not initialize`, error); }
+  if (isPrimaryActiveGM()) {
+    if (effectiveCalendarSourceMode() === "calendarForge") {
+      try { await processCalendarWorldTimeChange(game.time.worldTime, 0); }
+      catch (error) { console.warn(`${MODULE_ID} | Calendar Forge integration could not resume`, error); }
+    } else {
+      try {
+        const weather = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+        if (weather.weatherForgeCalendarSource === "calendarForge") {
+          await adoptWeatherIntoInternalCalendarFallback(weather);
+        }
+      } catch (error) {
+        console.warn(`${MODULE_ID} | Internal calendar fallback handoff failed`, error);
+      }
+    }
   }
 
   console.log(`${MODULE_ID} | Ready`);

@@ -1,5 +1,5 @@
 import { MODULE_ID, CLIMATE_ZONES, TIME_SEGMENTS, WEEKDAYS, MONTHS, MONTH_LENGTHS, EXTREME_FREQUENCIES, defaultWeatherState, createInitialWeatherState, generateNextWeather } from "./weather-engine.js";
-import { MOON_PHASES, applyCalendarToWeather, calendarFromFormData, extractCalendarFromWeather, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, normalizeCalendarState } from "./calendar-engine.js";
+import { MOON_PHASES, applyCalendarToWeather, calendarFromFormData, extractCalendarFromWeather, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, normalizeCalendarState, adoptWeatherIntoInternalCalendarFallback } from "./calendar-engine.js";
 import { HISTORY_LIMITS, appendWeatherHistory, clearWeatherHistory, getHistoryLimit, getWeatherHistory, historyDescriptorKey } from "./history-engine.js";
 import { FORECAST_DAYS, defaultForecastState, forecastDescriptorKey, forecastDriverKey, generateForecast, generateForecastFromCalendars, getForecastState, setForecastState } from "./forecast-engine.js";
 import { weatherForgeLocalize } from "./localization.js";
@@ -12,7 +12,7 @@ import {
 import {
   getCalendarDrivenUiState, generateCurrentPhasePreview, acceptCurrentPhasePreview,
   prepareNextPhasePreview, resolveCurrentPhaseWithInitialWeather, initializeCalendarDrivenWeather,
-  invalidateQueuedPreview
+  invalidateQueuedPreview, resetCalendarDrivenState
 } from "./daypart-automation.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -668,9 +668,29 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     PF2eWeatherForgeApp.#rememberActiveTab(this, target, "settings");
     const form = target.closest("form") ?? this.element;
     const fd = new FormData(form);
+
+    const previousEffectiveSource = effectiveCalendarSourceMode();
     await PF2eWeatherForgeApp.#persistUiSettings(fd);
-    if (effectiveCalendarSourceMode() === "calendarForge") await initializeCalendarDrivenWeather();
-    else if (fd.has("calendarMonth")) await setCalendarState(calendarFromFormData(fd));
+    const nextEffectiveSource = effectiveCalendarSourceMode();
+
+    if (previousEffectiveSource !== nextEffectiveSource) {
+      await game.settings.set(MODULE_ID, "weatherPreview", null);
+
+      if (nextEffectiveSource === "calendarForge") {
+        await resetCalendarDrivenState();
+        await initializeCalendarDrivenWeather({ force: true });
+      } else {
+        const current = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+        await resetCalendarDrivenState();
+        const adopted = await adoptWeatherIntoInternalCalendarFallback(current);
+        if (!adopted && fd.has("calendarMonth")) await setCalendarState(calendarFromFormData(fd));
+      }
+    } else if (nextEffectiveSource === "calendarForge") {
+      await initializeCalendarDrivenWeather();
+    } else if (fd.has("calendarMonth")) {
+      await setCalendarState(calendarFromFormData(fd));
+    }
+
     ui.notifications.info(game.i18n.localize(`${MODULE_ID}.notification.settingsSaved`));
     this.render();
   }
@@ -738,7 +758,13 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
   }
 
   static async #publishWeather(mode = "gm") {
-    const weather = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+    let weather = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+    if (effectiveCalendarSourceMode() === "calendarForge") {
+      try {
+        const integration = await getCalendarDrivenUiState();
+        if (integration?.active) weather = { ...weather, ...integration.phase.calendar, timeSegment: integration.phase.segment };
+      } catch (_) {}
+    }
     const prepared = PF2eWeatherForgeApp.#prepareWeatherForChat(weather);
     const content = PF2eWeatherForgeApp.#buildWeatherChatCard(prepared, mode);
     const messageData = {

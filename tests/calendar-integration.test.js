@@ -123,7 +123,7 @@ test("large Calendar Forge jumps resolve intermediate dayparts but leave only th
   const state = settings.get("calendarDrivenState");
   assert.match(state.currentPhaseKey, /:evening$/);
   assert.match(state.resolvedPhaseKey, /:afternoon$/);
-  assert.equal(settings.get("weatherState").timeSegment, "afternoon");
+  assert.equal(settings.get("weatherState").timeSegment, "evening");
   assert.equal(settings.get("weatherHistory").length, 1);
 
   const preview = await automation.generateCurrentPhasePreview({ climateZone: "temperate", allowExtreme: false });
@@ -142,5 +142,5 @@ test("large Calendar Forge jumps resolve intermediate dayparts but leave only th
   assert.match(nightState.resolvedPhaseKey, /:evening$/);
   assert.equal(nightState.queuedPreview, null);
   assert.equal(settings.get("weatherPreview").timeSegment, "night");
-  assert.equal(settings.get("weatherState").timeSegment, "evening");
+  assert.equal(settings.get("weatherState").timeSegment, "night");
 });
