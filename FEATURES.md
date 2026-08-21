@@ -351,3 +351,17 @@ Feature availability may change between releases.
 * Forecast, history and chat integration
 * Runtime and edge-case hardening
 * German and English localization
+
+
+## City Forge Integration (1.1.0)
+
+- Optional active-Scene context from City Forge
+- Settlement → district → location resolution
+- Automatic City climate mapping with manual fallback
+- Climate and terrain mapping in German and English
+- Normal, reset, forecast, queued, and automatic Calendar Forge generation all use the effective City climate
+- Current-weather provenance
+- Cross-Scene context mismatch warning
+- Preview invalidation on Scene / City settlement changes
+- Public climate/context API
+- No automatic City Dynamic State mutations

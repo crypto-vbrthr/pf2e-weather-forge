@@ -6,6 +6,11 @@ import {
   getCalendarForgePhaseInfo,
   enumerateCalendarForgePhaseBoundaries
 } from "./calendar-source.js";
+import {
+  annotateWeatherWithClimateContext,
+  configuredManualClimateZone,
+  resolveEffectiveClimateContext
+} from "./city-source.js";
 
 const RUNTIME_STATE_VERSION = 2;
 
@@ -55,7 +60,7 @@ function sourceSignature() {
 
 function generationSettings(weather) {
   return {
-    climateZone: weather?.climateZone ?? "temperate",
+    climateZone: configuredManualClimateZone(weather?.climateZone ?? "temperate"),
     allowExtreme: game.settings.get(MODULE_ID, "allowExtreme") ?? true,
     extremeFrequency: game.settings.get(MODULE_ID, "extremeFrequency") ?? "normal",
     forceExtreme: false,
@@ -151,12 +156,19 @@ async function commitWeather(weather, phase, resolution, { history = true } = {}
 }
 
 async function generateForPhase(baseWeather, phase, resolution = "automatic", settingsOverride = {}) {
+  const climateContext = await resolveEffectiveClimateContext({
+    manualClimateZone: configuredManualClimateZone(baseWeather?.climateZone ?? "temperate")
+  });
   const target = { ...phase.calendar, timeSegment: phase.segment };
   const generated = generateWeatherForTarget(baseWeather, target, {
     ...generationSettings(baseWeather),
-    ...settingsOverride
+    ...settingsOverride,
+    climateZone: settingsOverride.climateZone || climateContext.effectiveClimateZone
   });
-  return annotateWeather(generated, phase, resolution);
+  return annotateWeatherWithClimateContext(
+    annotateWeather(generated, phase, resolution),
+    climateContext
+  );
 }
 
 function automationMode() {
@@ -403,15 +415,21 @@ export async function generateCurrentPhasePreview({ climateZone = null, allowExt
   if (!uiState.active || uiState.resolved) return null;
 
   const base = uiState.state.phaseBaseWeather ?? currentWeather();
+  const climateContext = await resolveEffectiveClimateContext({
+    manualClimateZone: configuredManualClimateZone(base.climateZone ?? "temperate")
+  });
   const settings = {
     ...generationSettings(base),
-    climateZone: climateZone || base.climateZone,
+    climateZone: climateZone || climateContext.effectiveClimateZone,
     allowExtreme: allowExtreme ?? (game.settings.get(MODULE_ID, "allowExtreme") ?? true),
     extremeFrequency: extremeFrequency || game.settings.get(MODULE_ID, "extremeFrequency") || "normal",
     forceExtreme,
     extremeType
   };
-  const preview = annotateWeather(generateWeatherForTarget(base, uiState.phase.calendar, settings), uiState.phase, "manual-preview");
+  const preview = annotateWeatherWithClimateContext(
+    annotateWeather(generateWeatherForTarget(base, uiState.phase.calendar, settings), uiState.phase, "manual-preview"),
+    climateContext
+  );
   await game.settings.set(MODULE_ID, "weatherPreview", preview);
   return preview;
 }
@@ -446,8 +464,13 @@ export async function prepareNextPhasePreview({ climateZone = null } = {}) {
   if (!uiState.active || !uiState.resolved || !uiState.nextPhase) return null;
 
   const base = currentWeather();
-  const requestedClimate = climateZone && CLIMATE_ZONES[climateZone] ? climateZone : base.climateZone;
-  const generated = await generateForPhase(base, uiState.nextPhase, "queued-preview", { climateZone: requestedClimate });
+  const requestedClimate = climateZone && CLIMATE_ZONES[climateZone] ? climateZone : null;
+  const generated = await generateForPhase(
+    base,
+    uiState.nextPhase,
+    "queued-preview",
+    requestedClimate ? { climateZone: requestedClimate } : {}
+  );
   const state = getState();
   state.queuedPreview = {
     phaseKey: uiState.nextPhase.key,
@@ -469,11 +492,17 @@ export async function clearQueuedPreview() {
   await setState(state);
 }
 
-export async function resolveCurrentPhaseWithInitialWeather(climateZone = "temperate") {
+export async function resolveCurrentPhaseWithInitialWeather(climateZone = null) {
   const uiState = await getCalendarDrivenUiState();
   if (!uiState.active) return null;
+  const climateContext = await resolveEffectiveClimateContext({
+    manualClimateZone: configuredManualClimateZone(climateZone ?? currentWeather().climateZone ?? "temperate")
+  });
   const { createInitialWeatherState } = await import("./weather-engine.js");
-  const weather = createInitialWeatherState(climateZone, uiState.phase.calendar);
+  const weather = annotateWeatherWithClimateContext(
+    createInitialWeatherState(climateZone || climateContext.effectiveClimateZone, uiState.phase.calendar),
+    climateContext
+  );
   const committed = await commitWeather(weather, uiState.phase, "manual-reset", { history: false });
   const state = getState();
   state.currentPhaseKey = uiState.phase.key;

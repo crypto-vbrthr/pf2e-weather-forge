@@ -1,5 +1,96 @@
 # Changelog
 
+## 1.1.3
+
+### Fixed
+- Fixed the City Forge climate-source controls jumping back to the Weather Generation tab.
+- Climate-source and settlement changes now keep the Settings tab active across rerender.
+- Removed the fragile `FormData(this.element)` path from the live City-source controls.
+- The controls now persist only their own dedicated world settings directly.
+- Selecting a City Forge settlement now reliably writes both the selected settlement id and `climateSourceMode = "settlement"`.
+- Changing the climate-source dropdown now reliably persists the selected source before rerender.
+- Preview / queued-preview invalidation is preserved after either source change.
+
+### Climate integration
+- Added regression coverage proving that an explicitly selected City Forge 0.8.2 settlement with canonical `mediterranean` climate overrides a `temperate` manual fallback.
+- No City Forge update is required.
+
+### Compatibility
+- Public API remains v1.
+- City Forge 0.8.2 integration contract is unchanged.
+- Existing weather/history/calendar storage remains compatible.
+
+## 1.1.2
+
+### Fixed
+- Selecting a City Forge settlement now immediately switches the climate source to `City Forge settlement`.
+- Changing the climate-source dropdown now persists immediately and rerenders the City Forge context card.
+- The settlement selector now explains that choosing a settlement activates explicit-settlement mode.
+- This removes the confusing state where a settlement could be selected while `Automatic from active Scene` remained active and Weather Forge therefore correctly, but unexpectedly, ignored the settlement selection.
+
+### Compatibility
+- Public API remains v1.
+- Climate source modes remain `scene`, `settlement`, and `manual`.
+- City Forge 0.8.2 integration contract is unchanged.
+- Existing Weather Forge data requires no migration.
+
+## 1.1.1
+
+### City Forge integration hardening
+- Climate source now has three explicit modes:
+  - Automatic from active Scene
+  - Explicit City Forge settlement
+  - Manual
+- Added City Forge settlement selector populated from City Forge's public settlement API.
+- Explicit settlement mode reads the current City Forge Weather Context live; it does not copy settlement climate data into Weather Forge.
+- Canonical City Forge 0.8.2 climate ids are consumed directly without text interpretation.
+- Legacy alias/terrain mapping is retained only for older City Forge versions/imported legacy settlements.
+- Existing 1.1.0 `auto` source mode migrates to the new `scene` mode.
+- Scene changes invalidate previews only in Scene mode; explicit settlement mode is independent of the currently viewed Scene.
+- City settlement changes invalidate previews in both City-backed modes.
+
+### Compatibility
+- Weather Forge API remains v1.
+- City Forge remains optional.
+- Designed for City Forge 0.8.2 canonical climate data while remaining backward-compatible with 0.8.1.
+- Existing weather/history/calendar data remain compatible.
+
+## 1.1.0
+
+### Added
+- Optional City Forge 0.8.x active-Scene climate integration.
+- Automatic/manual climate source mode.
+- Dedicated manual/fallback climate setting.
+- Safe mapping from City Forge free-text climate/terrain to Weather Forge climate zones.
+- German and English climate aliases.
+- Active settlement / district / location context display in the Generator tab.
+- Effective climate display and fallback reason.
+- City-context weather provenance on generated/accepted weather.
+- Current-weather mismatch warning after Scene or settlement-context changes.
+- City context provenance on forecasts.
+- `getCityForgeStatus()` public API.
+- `getClimateContext()` public API.
+- `getCurrentWeatherContext()` public API.
+- City Forge integration capability flags.
+
+### Changed
+- Normal generation uses City Forge active-Scene climate in automatic mode.
+- Reset uses the active City climate in automatic mode.
+- Forecast generation uses the active City climate.
+- Calendar Forge manual daypart previews use the active City climate.
+- Calendar Forge queued previews use the active City climate.
+- Calendar Forge automatic daypart generation uses the active City climate.
+- Scene changes invalidate unaccepted previews but never silently replace accepted current weather.
+- City settlement create/update/delete events invalidate unaccepted previews in automatic mode.
+- All Weather Forge CSS is now scoped beneath `.pf2e-weather-forge` to avoid Forge-suite style leakage.
+
+### Compatibility
+- Weather Forge API remains v1 with additive methods.
+- Existing weather/calendar/history storage remains compatible.
+- Existing climate is migrated into the new manual/fallback climate setting on first 1.1.0 startup.
+- City Forge is optional.
+- Calendar Forge integration remains optional and compatible.
+
 ## v1.0.0 – Final Release
 
 Weather Forge 1.0.0 promotes the successfully tested 0.9.0-rc.1 release candidate to the first stable release.

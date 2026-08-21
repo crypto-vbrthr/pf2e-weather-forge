@@ -5,7 +5,17 @@ import { defaultWeatherHistory, getWeatherHistory, setWeatherHistory, clearWeath
 import { defaultForecastState, generateForecast, generateForecastFromCalendars, getForecastState, setForecastState } from "./forecast-engine.js";
 import { installWeatherForgeLocalizationFallback } from "./localization.js";
 import { DEFAULT_DAYPART_BOUNDARIES, effectiveCalendarSourceMode, getCalendarForgeApi, calendarForgeOptions, getCalendarForgeSnapshot, calendarForgeRuntimeStatus } from "./calendar-source.js";
-import { defaultCalendarDrivenState, initializeCalendarDrivenWeather, processCalendarWorldTimeChange } from "./daypart-automation.js";
+import { defaultCalendarDrivenState, initializeCalendarDrivenWeather, processCalendarWorldTimeChange, invalidateQueuedPreview } from "./daypart-automation.js";
+import {
+  CLIMATE_SOURCE_MODES,
+  activeSceneUuid,
+  cityForgeRuntimeStatus,
+  configuredCityForgeSettlementId,
+  configuredClimateSourceMode,
+  currentWeatherIntegrationContext,
+  initializeCityForgeClimateSettings,
+  resolveEffectiveClimateContext
+} from "./city-source.js";
 
 
 function isSettingRegistered(key) {
@@ -147,6 +157,55 @@ function registerWeatherForgeSettings() {
     });
   }
 
+  if (!isSettingRegistered("climateSourceMode")) {
+    game.settings.register(MODULE_ID, "climateSourceMode", {
+      name: `${MODULE_ID}.settings.climateSourceMode.name`,
+      hint: `${MODULE_ID}.settings.climateSourceMode.hint`,
+      scope: "world",
+      config: false,
+      type: String,
+      default: "scene",
+      choices: {
+        scene: `${MODULE_ID}.cityIntegration.source.scene`,
+        settlement: `${MODULE_ID}.cityIntegration.source.settlement`,
+        manual: `${MODULE_ID}.cityIntegration.source.manual`
+      }
+    });
+  }
+
+  if (!isSettingRegistered("cityForgeSettlementId")) {
+    game.settings.register(MODULE_ID, "cityForgeSettlementId", {
+      name: `${MODULE_ID}.settings.cityForgeSettlementId.name`,
+      hint: `${MODULE_ID}.settings.cityForgeSettlementId.hint`,
+      scope: "world",
+      config: false,
+      type: String,
+      default: ""
+    });
+  }
+
+  if (!isSettingRegistered("manualClimateZone")) {
+    game.settings.register(MODULE_ID, "manualClimateZone", {
+      name: `${MODULE_ID}.settings.manualClimateZone.name`,
+      hint: `${MODULE_ID}.settings.manualClimateZone.hint`,
+      scope: "world",
+      config: false,
+      type: String,
+      default: "temperate"
+    });
+  }
+
+  if (!isSettingRegistered("cityForgeIntegrationState")) {
+    game.settings.register(MODULE_ID, "cityForgeIntegrationState", {
+      name: `${MODULE_ID}.settings.cityForgeIntegrationState.name`,
+      hint: `${MODULE_ID}.settings.cityForgeIntegrationState.hint`,
+      scope: "world",
+      config: false,
+      type: Object,
+      default: { version: 0 }
+    });
+  }
+
   if (!isSettingRegistered("calendarSourceMode")) {
     game.settings.register(MODULE_ID, "calendarSourceMode", {
       name: `${MODULE_ID}.settings.calendarSourceMode.name`,
@@ -282,23 +341,91 @@ Hooks.on("calendarForgeReady", async () => {
 
 async function generateForecastForCurrentSource(days = 3) {
   const currentStored = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
-  if (effectiveCalendarSourceMode() !== "calendarForge") return generateForecast(currentStored, days);
+  const climateContext = await resolveEffectiveClimateContext({
+    manualClimateZone: game.settings.get(MODULE_ID, "manualClimateZone") ?? currentStored.climateZone
+  });
+  const currentForForecast = {
+    ...currentStored,
+    climateZone: climateContext.effectiveClimateZone
+  };
+
+  const annotateForecast = (forecast) => ({
+    ...forecast,
+    weatherForgeClimateSource: climateContext.source,
+    weatherForgeClimateReason: climateContext.reason,
+    weatherForgeCityContext: climateContext.context ? {
+      sceneUuid: climateContext.sceneUuid,
+      settlementId: climateContext.context.settlement?.id ?? null,
+      settlementName: climateContext.context.settlement?.name ?? null,
+      settlementRevision: climateContext.context.settlement?.revision ?? null,
+      districtId: climateContext.context.scope?.district?.id ?? null,
+      districtName: climateContext.context.scope?.district?.name ?? null,
+      locationId: climateContext.context.scope?.location?.id ?? null,
+      locationName: climateContext.context.scope?.location?.name ?? null,
+      climate: climateContext.context.geography?.climate ?? "",
+      terrain: climateContext.context.geography?.terrain ?? "",
+      resolvedClimateZone: climateContext.effectiveClimateZone
+    } : null
+  });
+
+  if (effectiveCalendarSourceMode() !== "calendarForge") return annotateForecast(generateForecast(currentForForecast, days));
   const api = getCalendarForgeApi();
-  if (!api) return generateForecast(currentStored, days);
+  if (!api) return annotateForecast(generateForecast(currentForForecast, days));
   const context = await api.getTemporalContext(calendarForgeOptions());
   const time = context.raw?.calendar?.time ?? {};
   const secondsPerDay = Number(time.secondsPerMinute ?? 60) * Number(time.minutesPerHour ?? 60) * Number(time.hoursPerDay ?? 24);
-  const currentCalendar = await getCalendarForgeSnapshot({ fallbackWeather: currentStored });
-  const current = { ...currentStored, ...currentCalendar };
+  const currentCalendar = await getCalendarForgeSnapshot({ fallbackWeather: currentForForecast });
+  const current = { ...currentForForecast, ...currentCalendar };
   const calendars = [];
   for (let day = 1; day <= Math.max(1, Math.min(7, Number(days) || 3)); day += 1) {
     calendars.push(await getCalendarForgeSnapshot({ worldTime: Number(game.time.worldTime) + day * secondsPerDay, fallbackWeather: current }));
   }
-  return generateForecastFromCalendars(current, calendars);
+  return annotateForecast(generateForecastFromCalendars(current, calendars));
+}
+
+async function invalidateCityClimatePreview({ sceneChange = false } = {}) {
+  const mode = configuredClimateSourceMode();
+  const shouldInvalidate = mode !== "manual" && (!sceneChange || mode === "scene");
+
+  if (shouldInvalidate) {
+    try {
+      await game.settings.set(MODULE_ID, "weatherPreview", null);
+      await invalidateQueuedPreview();
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Could not invalidate City Forge weather preview`, error);
+    }
+  }
+
+  if (weatherForgeApp?.rendered) weatherForgeApp.render();
+}
+
+Hooks.on("canvasReady", () => {
+  void invalidateCityClimatePreview({ sceneChange: true });
+});
+
+for (const hook of [
+  "pf2eCityForge.ready",
+  "pf2eCityForge.integrationReady",
+  "pf2eCityForge.settlementCreated",
+  "pf2eCityForge.settlementUpdated",
+  "pf2eCityForge.settlementDeleted"
+]) {
+  Hooks.on(hook, () => {
+    void invalidateCityClimatePreview();
+  });
 }
 
 Hooks.once("ready", async () => {
+  await initializeCityForgeClimateSettings();
+
   game.modules.get(MODULE_ID).api = {
+    version: 1,
+    capabilities: Object.freeze({
+      calendarForge: true,
+      cityForgeClimate: true,
+      activeSceneClimate: true,
+      currentWeatherContext: true
+    }),
     open: openWeatherForge,
     app: () => weatherForgeApp,
     getWeather: () => game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(),
@@ -316,6 +443,30 @@ Hooks.once("ready", async () => {
     clearHistory: clearWeatherHistory,
     getForecast: getForecastState,
     setForecast: setForecastState,
+    getCityForgeStatus: () => cityForgeRuntimeStatus(),
+    getClimateSourceMode: () => configuredClimateSourceMode(),
+    getClimateContext: async ({
+      sceneUuid = activeSceneUuid(),
+      settlementId = configuredCityForgeSettlementId(),
+      manualClimateZone = null,
+      sourceMode = configuredClimateSourceMode()
+    } = {}) => {
+      const current = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+      return resolveEffectiveClimateContext({
+        sceneUuid,
+        settlementId,
+        sourceMode,
+        manualClimateZone: manualClimateZone ?? game.settings.get(MODULE_ID, "manualClimateZone") ?? current.climateZone
+      });
+    },
+    getCurrentWeatherContext: async ({ sceneUuid = activeSceneUuid() } = {}) => {
+      const current = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+      const resolution = await resolveEffectiveClimateContext({
+        sceneUuid,
+        manualClimateZone: game.settings.get(MODULE_ID, "manualClimateZone") ?? current.climateZone
+      });
+      return currentWeatherIntegrationContext(current, resolution);
+    },
     generateForecast: async (days = 3) => {
       const forecast = await generateForecastForCurrentSource(days);
       await setForecastState(forecast);

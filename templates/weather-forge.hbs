@@ -47,6 +47,18 @@
             <dt>{{labels.field_climateZone}}</dt><dd>{{current.climateZoneLabel}}</dd>
             <dt>{{labels.field_extremeWeather}}</dt><dd>{{current.extremeLabel}}</dd>
           </dl>
+          {{#if cityIntegration.currentFromCity}}
+            <div class="city-weather-provenance">
+              <i class="fas fa-city"></i>
+              <span><strong>{{labels.cityIntegration_currentWeatherSource}}:</strong> {{cityIntegration.currentContextLabel}}</span>
+            </div>
+          {{/if}}
+          {{#if cityIntegration.currentMismatch}}
+            <div class="city-weather-warning">
+              <i class="fas fa-triangle-exclamation"></i>
+              <span>{{labels.cityIntegration_currentMismatch}}</span>
+            </div>
+          {{/if}}
         </div>
       </article>
 
@@ -58,6 +70,23 @@
           {{#if calendarIntegration.active}}
             <div class="calendar-source-badge"><i class="fas fa-calendar-days"></i> {{labels.calendarIntegration_active}}</div>
           {{/if}}
+        </div>
+
+        <div class="city-weather-context {{#if cityIntegration.usingCity}}is-city{{else}}is-fallback{{/if}}">
+          <div class="city-weather-context-head">
+            <span><i class="fas fa-city"></i> <strong>{{labels.cityIntegration_title}}</strong></span>
+            <span>{{cityIntegration.statusLabel}}</span>
+          </div>
+          {{#if cityIntegration.contextLabel}}
+            <div class="city-weather-path">{{cityIntegration.contextLabel}}</div>
+          {{/if}}
+          <dl class="city-weather-values">
+            <dt>{{labels.cityIntegration_effectiveClimate}}</dt><dd>{{cityIntegration.effectiveClimateLabel}}</dd>
+            {{#if cityIntegration.region}}<dt>{{labels.cityIntegration_cityRegion}}</dt><dd>{{cityIntegration.region}}</dd>{{/if}}
+            {{#if cityIntegration.terrain}}<dt>{{labels.cityIntegration_cityTerrain}}</dt><dd>{{cityIntegration.terrain}}</dd>{{/if}}
+            {{#if cityIntegration.cityClimate}}<dt>{{labels.cityIntegration_cityClimate}}</dt><dd>{{cityIntegration.cityClimate}}</dd>{{/if}}
+            {{#unless cityIntegration.usingCity}}<dt>{{labels.cityIntegration_manualFallback}}</dt><dd>{{cityIntegration.manualClimateLabel}}</dd>{{/unless}}
+          </dl>
         </div>
 
         {{#if calendarIntegration.active}}
@@ -232,8 +261,38 @@
     <section class="settings-tab-grid">
       <article class="weather-panel settings-section">
         <h2>{{labels.settingsTab_climateTitle}}</h2>
+
         <div class="form-group">
-          <label>{{labels.ui_climateZone}}</label>
+          <label>{{labels.cityIntegration_source}}</label>
+          <select name="climateSourceMode">
+            {{#each appSettings.climateSourceModes}}
+              <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>{{labels.cityIntegration_settlement}}</label>
+          <select name="cityForgeSettlementId">
+            {{#each appSettings.cityForgeSettlements}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+          <small>{{labels.cityIntegration_settlementHint}}</small>
+        </div>
+
+        <div class="city-weather-settings-status {{#if cityIntegration.usingCity}}is-city{{/if}}">
+          <div>
+            <i class="fas fa-city"></i>
+            <strong>{{labels.cityIntegration_title}}</strong>
+            <span>{{cityIntegration.statusLabel}}</span>
+          </div>
+          {{#if cityIntegration.contextLabel}}<small>{{cityIntegration.contextLabel}}</small>{{/if}}
+          <small>{{labels.cityIntegration_effectiveClimate}}: {{cityIntegration.effectiveClimateLabel}}</small>
+        </div>
+
+        <div class="form-group">
+          <label>{{labels.cityIntegration_manualFallback}}</label>
           <select name="climateZone">
             {{#each climateZones}}
               <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>

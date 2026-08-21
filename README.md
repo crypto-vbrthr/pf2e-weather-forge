@@ -1,162 +1,128 @@
-# PF2E Weather Forge
+# PF2e Weather Forge 1.1.3
 
-## Stable Release
+PF2e Weather Forge is a persistent, localized weather simulation for Foundry VTT and Pathfinder 2e.
 
-**Weather Forge 1.0.0** is the first stable release. The accepted release candidate was promoted without additional runtime changes.
+It supports climate-driven generation, forecasts, history, extreme weather, an internal Golarion calendar fallback, optional Calendar Forge time integration, and now optional City Forge active-Scene climate integration.
 
-A weather and forecast simulation for Pathfinder Second Edition Remastered on Foundry Virtual Tabletop, with optional Calendar Forge integration and a built-in calendar fallback.
+## 1.1.0: City Forge Deep Integration
 
-PF2E Weather Forge provides persistent, evolving weather generation, weather history, forecasting, climate zones, extreme weather events and chat integration. When Calendar Forge is active it can read date, local time, season and moon phase directly from that module; without Calendar Forge, the existing internal Golarion calendar continues to work as before.
+Weather Forge can now use the active Scene to ask City Forge where the party currently is.
 
+If City Forge resolves the Scene to a settlement, district, or location, Weather Forge can automatically derive its generation climate from City Forge geography.
 
+### Automatic climate context
 
-## 1.0.0 release candidate
+The default source mode is:
 
-This release candidate is the final integration-review build before 1.0.0. Calendar Forge remains an optional data source: when it is active Weather Forge consumes its date, season, moon and world-time context; when it is absent or disabled Weather Forge continues with its internal calendar workflow. The RC adds no new weather balance model and focuses on compatibility, runtime continuity, localization, manifest hygiene, and integration diagnostics.
+`Automatic: City Forge, otherwise fallback`
 
-The public module API also exposes `getCalendarSourceStatus()` for read-only diagnostics of the configured, available, effective and fallback calendar-source state.
+Weather Forge uses City Forge only when:
 
-## Main Window
+- City Forge is active and exposes the 0.8.x integration API
+- an active Scene exists
+- that Scene resolves to a City Forge settlement
+- City climate or terrain maps safely to a Weather Forge climate zone
 
-![Main Window](screenshots/main_window.png)
-![Forecast](screenshots/forecast.png)
-![History](screenshots/history.png)
+Otherwise the configured manual climate is used.
 
+You can switch to `Always manual` at any time.
 
+### Visible context
 
-## Features
+The Generator tab shows:
 
-### Weather Generation
+- City Forge status
+- settlement / district / location path
+- effective Weather Forge climate
+- City region
+- City terrain
+- City climate
+- manual fallback when applicable
 
-* Persistent weather system
-* Realistic temperature progression throughout the day
-* Climate-based weather generation
-* Seasonal temperature ranges
-* Humidity, cloud cover and wind strength
-* Localized weather descriptions
-* Extreme weather events
-* Multi-stage weather systems
+### No silent Scene rewrite
 
-### Calendar & Daypart Integration
+Switching Scenes does not replace accepted weather.
 
-Weather Forge can use **Calendar Forge** as its authoritative calendar source. In that mode it reads:
+Weather Forge keeps the last accepted weather and warns when it was generated for another City Forge place.
 
-* Date and local clock time
-* Season
-* Moon phase
-* Calendar / regional context
+Pending previews are discarded on a Scene/context change because they would otherwise be based on stale geography.
 
-Weather Forge never advances Calendar Forge time. Instead it reacts when Foundry world time crosses configured daypart boundaries. The defaults are:
+### Calendar Forge + City Forge
 
-* Morning 05:00
-* Noon 11:00
-* Afternoon 14:00
-* Evening 18:00
-* Night 22:00
+Both integrations can operate at the same time:
 
-Skipped dayparts are resolved automatically and chronologically so weather continues to evolve rather than jumping directly from the old state to the new one. Only the currently reached daypart remains open for manual generation. Once it is resolved, a preview for the next daypart can be prepared in advance. Runtime checkpoints make catch-up restart-safe, and prepared previews are invalidated when their source weather or target calendar context changes.
+- Calendar Forge supplies time, season, moon and daypart
+- City Forge supplies active place and climate
+- Weather Forge generates the weather
 
-If Calendar Forge is disabled or unavailable, Weather Forge uses its existing internal Golarion calendar and time controls unchanged. A compatible last Golarion date from Calendar Forge can seed the fallback so the calendar does not jump back to an older internal state.
-
-### Forecast System
-
-Generate weather forecasts based on actual weather trends.
-
-* 1 / 3 / 5 / 7 day forecasts
-* Temperature ranges
-* Rain probability
-* Storm probability
-* Confidence indicator
-* Forecasts influence future weather generation
-
-### Weather History
-
-Track historical weather data.
-
-* Weather history by date
-* Time-of-day entries
-* Configurable history limits
-* Historical weather review
-
-### Climate Zones
-
-Supported climate zones:
-
-* Arctic
-* Temperate
-* Mediterranean
-* Tropical
-* Desert
-* Mountain
-* Coastal
-* Swamp
-
-### Chat Integration
-
-Publish weather reports directly to chat.
-
-* GM-only weather reports
-* Public weather reports
-* Forecast reports
-* Localized chat cards
-
-### Localization
-
-Included translations:
-
-* English
-* German
-
-## User Interface
-
-The Weather Forge interface is divided into four tabs:
-
-### Weather
-
-Current weather conditions and generation controls.
+Calendar-driven automatic and queued daypart weather now use the active City Forge climate too.
 
 ### Forecast
 
-Weather forecasts and weather trend information.
+Forecast generation also uses the active City climate.
 
-### History
+Forecast data records City context provenance just like generated weather.
 
-Historical weather records.
+### API
 
-### Settings
+```js
+const weather = game.modules.get("pf2e-weather-forge")?.api;
 
-Climate zones, history settings, calendar controls and weather options.
-
-## Installation
-
-### Manifest URL
-
-Add the manifest URL in Foundry's Install Module dialog.
-
-```text
-<manifest-url>
+weather.getCityForgeStatus();
+await weather.getClimateContext();
+await weather.getCurrentWeatherContext();
 ```
 
-### Manual Installation
+The API remains version 1 and gains additive City Forge capabilities.
 
-1. Download the latest release.
-2. Extract the ZIP into:
-
-```text
-FoundryVTT/Data/modules/
-```
-
-3. Enable PF2E Weather Forge in your world.
+See `CITY-FORGE-INTEGRATION.md` for the integration contract and mapping behavior.
 
 ## Compatibility
 
-* Foundry VTT V14
-* Pathfinder 2E Remastered
+- Foundry VTT: minimum 13, verified 14
+- PF2e: supported
+- City Forge: optional, designed for 0.8.1+
+- Calendar Forge: optional
+- No hard module dependencies
 
-## License
+## Existing functionality retained
 
-MIT License
+- climate zones
+- current weather and preview workflow
+- humidity / clouds / wind / precipitation
+- daily temperature profiles and trends
+- extreme weather
+- forecasts
+- weather history
+- GM/public chat output
+- internal Golarion calendar fallback
+- Calendar Forge date/time/season/moon integration
+- manual and automatic Calendar Forge daypart weather
 
-## Credits
 
-Created for Pathfinder 2E Remastered and Foundry VTT.
+## 1.1.1 explicit City Forge settlement source
+
+Climate source now offers three modes:
+
+1. **Automatic from active Scene**: resolves settlement/district/location through City Forge.
+2. **City Forge settlement**: uses an explicitly selected settlement independent of the viewed Scene.
+3. **Manual**: ignores City Forge.
+
+City Forge 0.8.2 stores the same canonical climate ids as Weather Forge, so the normal integration path no longer relies on free-text interpretation.
+
+
+## 1.1.2 source-selection UX fix
+
+Choosing a City Forge settlement now automatically activates the explicit `City Forge settlement` source mode and refreshes the displayed context immediately.
+
+This prevents a selected settlement from appearing to be active while the source mode still points at the active Scene.
+
+
+## 1.1.3 City-source control hotfix
+
+City climate-source controls now persist their own settings directly instead of trying to serialize the ApplicationV2 root element.
+
+This fixes both symptoms caused by the previous live-control handler:
+
+- the UI no longer jumps back to Weather Generation when source/settlement changes
+- the selected explicit City Forge settlement is now actually used for effective climate resolution
