@@ -4,6 +4,16 @@ PF2e Weather Forge is a persistent, localized weather simulation for Foundry VTT
 
 It supports climate-driven generation, forecasts, history, extreme weather, an internal Golarion calendar fallback, optional Calendar Forge time integration, and now optional City Forge active-Scene climate integration.
 
+
+## Part of the Forge Suite
+
+**Weaather Forge:** is part of the **Forge Suite**, a growing collection of Foundry VTT modules and add-ons built for the busy Game Master. The suite is designed to reduce preparation and bookkeeping, make common GM tasks easier, and add useful tools that help make running and playing campaigns smoother and more enjoyable.
+
+An overview of the Forge Suite, its modules, add-ons, and shared documentation is available here:
+
+**Forge Suite:** https://github.com/crypto-vbrthr/pf2e-forge-suite
+
+
 ## 1.1.0: City Forge Deep Integration
 
 Weather Forge can now use the active Scene to ask City Forge where the party currently is.
