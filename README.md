@@ -7,7 +7,7 @@ It supports climate-driven generation, forecasts, history, extreme weather, an i
 
 ## Part of the Forge Suite
 
-**Weaather Forge:** is part of the **Forge Suite**, a growing collection of Foundry VTT modules and add-ons built for the busy Game Master. The suite is designed to reduce preparation and bookkeeping, make common GM tasks easier, and add useful tools that help make running and playing campaigns smoother and more enjoyable.
+**Weaather Forge** is part of the **Forge Suite**, a growing collection of Foundry VTT modules and add-ons built for the busy Game Master. The suite is designed to reduce preparation and bookkeeping, make common GM tasks easier, and add useful tools that help make running and playing campaigns smoother and more enjoyable.
 
 An overview of the Forge Suite, its modules, add-ons, and shared documentation is available here:
 
