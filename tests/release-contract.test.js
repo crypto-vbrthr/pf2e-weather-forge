@@ -22,7 +22,7 @@ function setGame({ settings = new Map(), calendarModule = null } = {}) {
 }
 
 test("release manifest contains production metadata and no hard Calendar Forge requirement", () => {
-  assert.equal(moduleJson.version, "1.1.3");
+  assert.equal(moduleJson.version, "1.1.3.1");
   assert.equal(moduleJson.compatibility.verified, "14");
   assert.equal(moduleJson.authors?.[0]?.name, "crypto-vbrthr");
   assert.ok(!JSON.stringify(moduleJson).includes("Your Name"));

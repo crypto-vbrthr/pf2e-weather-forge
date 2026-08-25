@@ -416,6 +416,10 @@ for (const hook of [
 }
 
 Hooks.once("ready", async () => {
+  // Foundry normally runs the init hook before ready, but worlds that load/refresh
+  // module code late can otherwise expose the public API without registered settings.
+  // Re-check registration here so every public weather read has a valid backing state.
+  registerWeatherForgeSettings();
   await initializeCityForgeClimateSettings();
 
   game.modules.get(MODULE_ID).api = {

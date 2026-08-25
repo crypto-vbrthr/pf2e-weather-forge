@@ -136,3 +136,7 @@ This fixes both symptoms caused by the previous live-control handler:
 
 - the UI no longer jumps back to Weather Generation when source/settlement changes
 - the selected explicit City Forge settlement is now actually used for effective climate resolution
+
+
+### 1.1.3.1 settings hardening
+Weather Forge now re-checks its hidden world-setting registration during Foundry `ready` before its public API is exposed. This is a defensive lifecycle fallback for environments where the earlier `init` registration was missed.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3.1 – Settings Registration Hardening
+
+- Re-checks hidden Weather Forge world-setting registration at `ready` before initializing integrations and exposing the public API.
+- Prevents `weatherState is not a registered game setting` when the module code is loaded in a lifecycle where the earlier `init` registration did not take effect.
+- No weather generation or balance changes.
+
 ## 1.1.3
 
 ### Fixed
