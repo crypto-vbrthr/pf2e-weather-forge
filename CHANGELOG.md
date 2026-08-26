@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.3.4 – Calendar Forge Startup Resume Regression Hotfix
+
+- Restored the Calendar Forge startup-race hardening that was accidentally absent from the 1.1.3.x runtime while its regression tests were still present.
+- Pins every Calendar Forge daypart date-to-world-time conversion to the exact calendar id that produced the temporal context.
+- Adjacent-day lookups during night/daypart calculations remain on the same calendar for the complete calculation.
+- Defers and debounces Calendar Forge weather resume instead of running synchronously from `calendarForgeReady` or Foundry `ready`.
+- Re-runs the safe resume after Calendar Forge provider registration, provider defaults, definition changes, active-calendar changes, or region changes.
+- Prevents mixed-calendar month ids such as Earth `february` being validated against the Golarion/Absalom calendar.
+- Preserves all Weather Forge 1.1.3.3 City Forge and Foundry V14 localization fixes.
+- No weather-generation, climate, forecast, or balance changes.
+
 ## 1.1.3.3 – Foundry V14 Localization Namespace Hotfix
 
 - Fixed Foundry V14 rejecting `lang/de.json` and `lang/en.json` during world startup with `Cannot create property ... on string ...`.

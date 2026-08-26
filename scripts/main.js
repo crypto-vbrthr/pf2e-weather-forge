@@ -329,11 +329,41 @@ Hooks.on("updateWorldTime", (worldTime, delta) => {
   });
 });
 
-Hooks.on("calendarForgeReady", async () => {
+let calendarForgeResumeTimer = null;
+
+function scheduleCalendarForgeResume(reason = "calendarForgeReady") {
   if (!isPrimaryActiveGM()) return;
-  try { await processCalendarWorldTimeChange(game.time.worldTime, 0); }
-  catch (error) { console.warn(`${MODULE_ID} | Calendar Forge initialization failed`, error); }
+
+  // Calendar Forge exposes the core API first. Provider modules such as
+  // Calendar Forge: Golarion can register calendars/defaults from the same
+  // startup hook. Debounce the resume out of that hook stack and restart the
+  // short timer whenever provider definitions/defaults change.
+  if (calendarForgeResumeTimer) clearTimeout(calendarForgeResumeTimer);
+  calendarForgeResumeTimer = setTimeout(async () => {
+    calendarForgeResumeTimer = null;
+    if (!isPrimaryActiveGM() || effectiveCalendarSourceMode() !== "calendarForge") return;
+    try {
+      await processCalendarWorldTimeChange(game.time.worldTime, 0);
+      if (weatherForgeApp?.rendered) weatherForgeApp.render();
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Calendar Forge integration could not resume after ${reason}`, error);
+    }
+  }, 0);
+}
+
+Hooks.on("calendarForgeReady", () => {
+  scheduleCalendarForgeResume("calendarForgeReady");
 });
+
+for (const hook of [
+  "calendarForgeProviderRegistered",
+  "calendarForgeProviderDefaultsApplied",
+  "calendarForgeDefinitionsChanged",
+  "calendarForgeCalendarChanged",
+  "calendarForgeRegionChanged"
+]) {
+  Hooks.on(hook, () => scheduleCalendarForgeResume(hook));
+}
 
 async function generateForecastForCurrentSource(days = 3) {
   const currentStored = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
@@ -476,8 +506,10 @@ Hooks.once("ready", async () => {
 
   if (isPrimaryActiveGM()) {
     if (effectiveCalendarSourceMode() === "calendarForge") {
-      try { await processCalendarWorldTimeChange(game.time.worldTime, 0); }
-      catch (error) { console.warn(`${MODULE_ID} | Calendar Forge integration could not resume`, error); }
+      // Do not resume synchronously from Foundry ready. Calendar Forge provider
+      // modules may still be registering their calendars/defaults in their own
+      // ready/calendarForgeReady path.
+      scheduleCalendarForgeResume("foundryReady");
     } else {
       try {
         const weather = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();

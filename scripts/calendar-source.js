@@ -205,14 +205,18 @@ function phaseKey(segment, startWorldTime) {
   return `${Math.round(number(startWorldTime, 0))}:${segment}`;
 }
 
-async function calendarForgeContextAt(worldTime) {
+async function calendarForgeContextAt(worldTime, { calendarId = null } = {}) {
   const api = getCalendarForgeApi();
   if (!api) throw new Error("Calendar Forge is not available");
-  return api.getTemporalContext(calendarForgeOptions({ worldTime: number(worldTime, 0) }));
+  return api.getTemporalContext(calendarForgeOptions({
+    ...(calendarId ? { calendarId } : {}),
+    worldTime: number(worldTime, 0)
+  }));
 }
 
 async function worldTimeForLocal(context, hour) {
   const api = getCalendarForgeApi();
+  const calendarId = context?.calendar?.id ?? null;
   return api.toWorldTime({
     year: context.calendar.year,
     monthId: context.calendar.monthId,
@@ -220,7 +224,7 @@ async function worldTimeForLocal(context, hour) {
     hour,
     minute: 0,
     second: 0
-  }, calendarForgeOptions());
+  }, calendarForgeOptions(calendarId ? { calendarId } : {}));
 }
 
 export async function getCalendarForgePhaseInfo(worldTime = game.time?.worldTime) {
@@ -228,6 +232,7 @@ export async function getCalendarForgePhaseInfo(worldTime = game.time?.worldTime
   if (!api) return null;
   const wt = number(worldTime, 0);
   const context = await calendarForgeContextAt(wt);
+  const calculationCalendarId = context?.calendar?.id ?? null;
   const boundaries = normalizeDaypartBoundaries(setting("daypartBoundaries", DEFAULT_DAYPART_BOUNDARIES));
   const hoursPerDay = number(context?.raw?.calendar?.time?.hoursPerDay, 24);
   if (hoursPerDay <= boundaries.night) throw new Error("The selected Calendar Forge calendar is not compatible with the configured Weather Forge daypart hours.");
@@ -240,12 +245,12 @@ export async function getCalendarForgePhaseInfo(worldTime = game.time?.worldTime
   let nextSegment;
   if (segment === "night") {
     if (context.time.hour < boundaries.morning) {
-      const previousContext = await calendarForgeContextAt(dayStart - 1);
+      const previousContext = await calendarForgeContextAt(dayStart - 1, { calendarId: calculationCalendarId });
       startWorldTime = await worldTimeForLocal(previousContext, boundaries.night);
       nextBoundaryWorldTime = await worldTimeForLocal(context, boundaries.morning);
     } else {
       startWorldTime = await worldTimeForLocal(context, boundaries.night);
-      const nextDayContext = await calendarForgeContextAt(dayStart + secondsPerDay + 1);
+      const nextDayContext = await calendarForgeContextAt(dayStart + secondsPerDay + 1, { calendarId: calculationCalendarId });
       nextBoundaryWorldTime = await worldTimeForLocal(nextDayContext, boundaries.morning);
     }
     nextSegment = "morning";
