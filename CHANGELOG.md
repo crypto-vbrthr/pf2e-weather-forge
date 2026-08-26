@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.3.3 – Foundry V14 Localization Namespace Hotfix
+
+- Fixed Foundry V14 rejecting `lang/de.json` and `lang/en.json` during world startup with `Cannot create property ... on string ...`.
+- Removed three dotted localization namespace collisions where a translation key was both a string value and the parent namespace of additional keys.
+- Renamed the conflicting parent labels for the forecast hint, Calendar Forge source label, and City Forge source label without changing their displayed text.
+- Added regression coverage that rejects any future parent/child localization-key collision in both bundled languages.
+- No weather generation, forecast logic, calendar, City Forge integration, or balance changes.
+
+## 1.1.3.2 – Foundry V14 Localization Compatibility Hotfix
+
+- Fixed world startup failing with `Cannot assign to read only property 'format' of object '#<Localization>'`.
+- Weather Forge no longer monkey-patches Foundry's global `game.i18n.localize` or `game.i18n.format` methods during `init`.
+- Internal DE/EN fallback dictionaries remain available through Weather Forge's own localization helpers.
+- No weather generation, calendar, forecast, City Forge integration, or balance changes.
+
 ## 1.1.3.1 – Settings Registration Hardening
 
 - Re-checks hidden Weather Forge world-setting registration at `ready` before initializing integrations and exposing the public API.

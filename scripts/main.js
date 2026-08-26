@@ -3,7 +3,6 @@ import { PF2eWeatherForgeApp } from "./weather-app.js";
 import { defaultCalendarState, getCalendarState, setCalendarState, advanceTimeSegment, rewindTimeSegment, advanceCalendarDate, adoptWeatherIntoInternalCalendarFallback } from "./calendar-engine.js";
 import { defaultWeatherHistory, getWeatherHistory, setWeatherHistory, clearWeatherHistory } from "./history-engine.js";
 import { defaultForecastState, generateForecast, generateForecastFromCalendars, getForecastState, setForecastState } from "./forecast-engine.js";
-import { installWeatherForgeLocalizationFallback } from "./localization.js";
 import { DEFAULT_DAYPART_BOUNDARIES, effectiveCalendarSourceMode, getCalendarForgeApi, calendarForgeOptions, getCalendarForgeSnapshot, calendarForgeRuntimeStatus } from "./calendar-source.js";
 import { defaultCalendarDrivenState, initializeCalendarDrivenWeather, processCalendarWorldTimeChange, invalidateQueuedPreview } from "./daypart-automation.js";
 import {
@@ -300,9 +299,6 @@ function addWeatherForgeSceneControl(controls) {
 }
 
 Hooks.once("init", () => {
-  installWeatherForgeLocalizationFallback(MODULE_ID);
-
-
   registerWeatherForgeSettings();
 });
 

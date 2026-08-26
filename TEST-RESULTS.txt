@@ -1,320 +1,344 @@
 
-> pf2e-weather-forge@1.1.3.1 test
+> pf2e-weather-forge@1.1.3.3 test
 > node --test tests/*.test.js
 
 TAP version 13
 # Subtest: 0.7 Calendar Forge UI strings have an internal DE/EN fallback
 ok 1 - 0.7 Calendar Forge UI strings have an internal DE/EN fallback
   ---
-  duration_ms: 0.797353
+  duration_ms: 1.446783
   type: 'test'
   ...
 # Subtest: Calendar integration settings use shrink-safe responsive grids
 ok 2 - Calendar integration settings use shrink-safe responsive grids
   ---
-  duration_ms: 0.288518
+  duration_ms: 0.424949
   type: 'test'
   ...
 # Subtest: default daypart boundaries map clock hours to the five Weather Forge phases
 ok 3 - default daypart boundaries map clock hours to the five Weather Forge phases
   ---
-  duration_ms: 0.751615
+  duration_ms: 0.942573
   type: 'test'
   ...
 # Subtest: invalid daypart ordering falls back to the safe default schedule
 ok 4 - invalid daypart ordering falls back to the safe default schedule
   ---
-  duration_ms: 0.636313
+  duration_ms: 0.541615
   type: 'test'
   ...
 # Subtest: Calendar Forge moon phase ids map to Weather Forge phase ids
 ok 5 - Calendar Forge moon phase ids map to Weather Forge phase ids
   ---
-  duration_ms: 0.143502
+  duration_ms: 0.132591
   type: 'test'
   ...
 # Subtest: targeted weather generation keeps the externally supplied date and phase
 ok 6 - targeted weather generation keeps the externally supplied date and phase
   ---
-  duration_ms: 1.365806
+  duration_ms: 1.71532
   type: 'test'
   ...
 # Subtest: forecast generation can consume Calendar Forge supplied future dates
 ok 7 - forecast generation can consume Calendar Forge supplied future dates
   ---
-  duration_ms: 0.627341
+  duration_ms: 0.813944
   type: 'test'
   ...
 # Subtest: calendar-driven runtime state distinguishes current and resolved phases
 ok 8 - calendar-driven runtime state distinguishes current and resolved phases
   ---
-  duration_ms: 0.111595
+  duration_ms: 0.111944
   type: 'test'
   ...
 # Subtest: large Calendar Forge jumps resolve intermediate dayparts but leave only the current daypart open
 ok 9 - large Calendar Forge jumps resolve intermediate dayparts but leave only the current daypart open
   ---
-  duration_ms: 5.75161
+  duration_ms: 6.261712
   type: 'test'
   ...
 # Subtest: queued Calendar Forge daypart preview uses the active City Forge Scene climate
 ok 10 - queued Calendar Forge daypart preview uses the active City Forge Scene climate
   ---
-  duration_ms: 4.216474
+  duration_ms: 4.746639
   type: 'test'
   ...
 # Subtest: Weather Forge exposes City climate source and active-context UI
 ok 11 - Weather Forge exposes City climate source and active-context UI
   ---
-  duration_ms: 0.940064
+  duration_ms: 1.134356
   type: 'test'
   ...
 # Subtest: scene and City settlement changes invalidate stale previews instead of changing accepted weather
 ok 12 - scene and City settlement changes invalidate stale previews instead of changing accepted weather
   ---
-  duration_ms: 0.296149
+  duration_ms: 0.227035
   type: 'test'
   ...
 # Subtest: Weather Forge public API exposes current City climate and weather provenance
 ok 13 - Weather Forge public API exposes current City climate and weather provenance
   ---
-  duration_ms: 0.244312
+  duration_ms: 0.167213
   type: 'test'
   ...
 # Subtest: Weather Forge CSS is isolated beneath its own application root
 ok 14 - Weather Forge CSS is isolated beneath its own application root
   ---
-  duration_ms: 0.232866
+  duration_ms: 0.149159
   type: 'test'
   ...
 # Subtest: Weather Forge settings expose explicit City Forge settlement selection
 ok 15 - Weather Forge settings expose explicit City Forge settlement selection
   ---
-  duration_ms: 0.180508
+  duration_ms: 0.10834
   type: 'test'
   ...
 # Subtest: climate source supports Scene, settlement and manual modes
 ok 16 - climate source supports Scene, settlement and manual modes
   ---
-  duration_ms: 0.160438
+  duration_ms: 0.137336
   type: 'test'
   ...
 # Subtest: German and English City climate strings map to Weather Forge climate zones
 ok 17 - German and English City climate strings map to Weather Forge climate zones
   ---
-  duration_ms: 2.095077
+  duration_ms: 2.485918
   type: 'test'
   ...
 # Subtest: terrain is a safe fallback only when City climate text is not mapped
 ok 18 - terrain is a safe fallback only when City climate text is not mapped
   ---
-  duration_ms: 0.297311
+  duration_ms: 0.576898
   type: 'test'
   ...
 # Subtest: automatic mode resolves the active Scene through City Forge and uses its climate
 ok 19 - automatic mode resolves the active Scene through City Forge and uses its climate
   ---
-  duration_ms: 0.54615
+  duration_ms: 1.008059
   type: 'test'
   ...
 # Subtest: unmapped City climate falls back to the configured manual climate without guessing
 ok 20 - unmapped City climate falls back to the configured manual climate without guessing
   ---
-  duration_ms: 0.376068
+  duration_ms: 0.578024
   type: 'test'
   ...
 # Subtest: manual mode never consumes City Forge climate
 ok 21 - manual mode never consumes City Forge climate
   ---
-  duration_ms: 0.210122
+  duration_ms: 0.334403
   type: 'test'
   ...
 # Subtest: weather provenance records the exact settlement / district / location used for generation
 ok 22 - weather provenance records the exact settlement / district / location used for generation
   ---
-  duration_ms: 0.453502
+  duration_ms: 0.550011
   type: 'test'
   ...
 # Subtest: current weather mismatch detects an active-scene place change without silently rewriting weather
 ok 23 - current weather mismatch detects an active-scene place change without silently rewriting weather
   ---
-  duration_ms: 0.390078
+  duration_ms: 0.683995
   type: 'test'
   ...
 # Subtest: explicit City Forge Mediterranean settlement overrides temperate manual fallback
 ok 24 - explicit City Forge Mediterranean settlement overrides temperate manual fallback
   ---
-  duration_ms: 1.265527
+  duration_ms: 1.386892
   type: 'test'
   ...
 # Subtest: explicit settlement mode ignores the active Scene and uses the selected City Forge settlement
 ok 25 - explicit settlement mode ignores the active Scene and uses the selected City Forge settlement
   ---
-  duration_ms: 1.900829
+  duration_ms: 1.306524
   type: 'test'
   ...
 # Subtest: settlement list is populated from City Forge public settlement API
 ok 26 - settlement list is populated from City Forge public settlement API
   ---
-  duration_ms: 7.569317
+  duration_ms: 6.873542
   type: 'test'
   ...
 # Subtest: explicit settlement mode falls back safely when no settlement is selected
 ok 27 - explicit settlement mode falls back safely when no settlement is selected
   ---
-  duration_ms: 0.269069
+  duration_ms: 0.421995
   type: 'test'
   ...
 # Subtest: canonical City Forge 0.8.2 climate ids are accepted directly
 ok 28 - canonical City Forge 0.8.2 climate ids are accepted directly
   ---
-  duration_ms: 0.119767
+  duration_ms: 0.140616
   type: 'test'
   ...
 # Subtest: legacy Weather Forge 1.1.0 auto mode migrates to scene mode
 ok 29 - legacy Weather Forge 1.1.0 auto mode migrates to scene mode
   ---
-  duration_ms: 0.254498
+  duration_ms: 0.283119
   type: 'test'
   ...
 # Subtest: City source changes persist dedicated settings directly instead of serializing the Application root
 ok 30 - City source changes persist dedicated settings directly instead of serializing the Application root
   ---
-  duration_ms: 0.995716
+  duration_ms: 0.986001
   type: 'test'
   ...
 # Subtest: live City source changes keep the Settings tab active when rerendering
 ok 31 - live City source changes keep the Settings tab active when rerendering
   ---
-  duration_ms: 0.280566
+  duration_ms: 0.327175
   type: 'test'
   ...
 # Subtest: source and settlement controls each have their own live change handler
 ok 32 - source and settlement controls each have their own live change handler
   ---
-  duration_ms: 0.153568
+  duration_ms: 0.168534
   type: 'test'
   ...
 # Subtest: settlement selector continues to explain explicit source activation
 ok 33 - settlement selector continues to explain explicit source activation
   ---
-  duration_ms: 0.203592
+  duration_ms: 0.216797
+  type: 'test'
+  ...
+# Subtest: de localization contains no Foundry namespace collisions
+ok 34 - de localization contains no Foundry namespace collisions
+  ---
+  duration_ms: 3.892969
+  type: 'test'
+  ...
+# Subtest: en localization contains no Foundry namespace collisions
+ok 35 - en localization contains no Foundry namespace collisions
+  ---
+  duration_ms: 1.124401
+  type: 'test'
+  ...
+# Subtest: Foundry V14 localization object is never monkey-patched
+ok 36 - Foundry V14 localization object is never monkey-patched
+  ---
+  duration_ms: 0.97414
+  type: 'test'
+  ...
+# Subtest: fallback installer is safe with read-only Foundry Localization methods
+ok 37 - fallback installer is safe with read-only Foundry Localization methods
+  ---
+  duration_ms: 4.593962
   type: 'test'
   ...
 # Subtest: queued next-daypart preview is rendered as the full preview card
-ok 34 - queued next-daypart preview is rendered as the full preview card
+ok 38 - queued next-daypart preview is rendered as the full preview card
   ---
-  duration_ms: 0.695061
+  duration_ms: 0.844832
   type: 'test'
   ...
 # Subtest: preview empty text distinguishes current and next dayparts
-ok 35 - preview empty text distinguishes current and next dayparts
+ok 39 - preview empty text distinguishes current and next dayparts
   ---
-  duration_ms: 0.125506
+  duration_ms: 0.210142
   type: 'test'
   ...
 # Subtest: release manifest contains production metadata and no hard Calendar Forge requirement
-ok 36 - release manifest contains production metadata and no hard Calendar Forge requirement
+ok 40 - release manifest contains production metadata and no hard Calendar Forge requirement
   ---
-  duration_ms: 0.978821
+  duration_ms: 0.946974
   type: 'test'
   ...
 # Subtest: German and English localization contracts are identical
-ok 37 - German and English localization contracts are identical
+ok 41 - German and English localization contracts are identical
   ---
-  duration_ms: 1.221512
+  duration_ms: 1.144109
   type: 'test'
   ...
 # Subtest: all template actions have application handlers
-ok 38 - all template actions have application handlers
+ok 42 - all template actions have application handlers
   ---
-  duration_ms: 0.283991
+  duration_ms: 0.329836
   type: 'test'
   ...
 # Subtest: auto mode falls back to internal calendar when Calendar Forge is absent
-ok 39 - auto mode falls back to internal calendar when Calendar Forge is absent
+ok 43 - auto mode falls back to internal calendar when Calendar Forge is absent
   ---
-  duration_ms: 0.229291
+  duration_ms: 0.230538
   type: 'test'
   ...
 # Subtest: an available but empty provider registry clears stale region and moon selections
-ok 40 - an available but empty provider registry clears stale region and moon selections
+ok 44 - an available but empty provider registry clears stale region and moon selections
   ---
-  duration_ms: 0.426833
+  duration_ms: 0.241383
   type: 'test'
   ...
 # Subtest: crossing midnight inside night refreshes date season and moon metadata without generating a phase
-ok 41 - crossing midnight inside night refreshes date season and moon metadata without generating a phase
+ok 45 - crossing midnight inside night refreshes date season and moon metadata without generating a phase
   ---
-  duration_ms: 9.215338
+  duration_ms: 15.667816
   type: 'test'
   ...
 # Subtest: prepared next-daypart preview becomes stale if meteorological base changes before boundary
-ok 42 - prepared next-daypart preview becomes stale if meteorological base changes before boundary
+ok 46 - prepared next-daypart preview becomes stale if meteorological base changes before boundary
   ---
-  duration_ms: 3.173306
+  duration_ms: 4.783634
   type: 'test'
   ...
 # Subtest: prepared next-daypart previews are tied to the weather state they were generated from
-ok 43 - prepared next-daypart previews are tied to the weather state they were generated from
+ok 47 - prepared next-daypart previews are tied to the weather state they were generated from
   ---
-  duration_ms: 0.919734
+  duration_ms: 1.319666
   type: 'test'
   ...
 # Subtest: phase context signature changes when date, season, or moon context changes inside a daypart
-ok 44 - phase context signature changes when date, season, or moon context changes inside a daypart
+ok 48 - phase context signature changes when date, season, or moon context changes inside a daypart
   ---
-  duration_ms: 0.234097
+  duration_ms: 0.345203
   type: 'test'
   ...
 # Subtest: weather fingerprint ignores calendar labels and time metadata
-ok 45 - weather fingerprint ignores calendar labels and time metadata
+ok 49 - weather fingerprint ignores calendar labels and time metadata
   ---
-  duration_ms: 0.129252
+  duration_ms: 0.220422
   type: 'test'
   ...
 # Subtest: internal fallback adopts compatible Golarion weather but refuses exotic calendar ids
-ok 46 - internal fallback adopts compatible Golarion weather but refuses exotic calendar ids
+ok 50 - internal fallback adopts compatible Golarion weather but refuses exotic calendar ids
   ---
-  duration_ms: 0.899925
+  duration_ms: 1.69113
   type: 'test'
   ...
 # Subtest: runtime state schema includes catch-up bookkeeping
-ok 47 - runtime state schema includes catch-up bookkeeping
+ok 51 - runtime state schema includes catch-up bookkeeping
   ---
-  duration_ms: 0.142221
+  duration_ms: 0.224486
   type: 'test'
   ...
 # Subtest: stale provider region and moon ids are ignored safely
-ok 48 - stale provider region and moon ids are ignored safely
+ok 52 - stale provider region and moon ids are ignored safely
   ---
-  duration_ms: 0.678697
+  duration_ms: 1.012952
   type: 'test'
   ...
 # Subtest: ready hook re-checks Weather Forge setting registration before public API setup
-ok 49 - ready hook re-checks Weather Forge setting registration before public API setup
+ok 53 - ready hook re-checks Weather Forge setting registration before public API setup
   ---
-  duration_ms: 0.786106
+  duration_ms: 0.786886
   type: 'test'
   ...
 # Subtest: ApplicationV2 template does not depend on custom wf Handlebars helpers
-ok 50 - ApplicationV2 template does not depend on custom wf Handlebars helpers
+ok 54 - ApplicationV2 template does not depend on custom wf Handlebars helpers
   ---
-  duration_ms: 0.814308
+  duration_ms: 0.762116
   type: 'test'
   ...
 # Subtest: daypart boundary labels are prepared in application context
-ok 51 - daypart boundary labels are prepared in application context
+ok 55 - daypart boundary labels are prepared in application context
   ---
-  duration_ms: 0.397599
+  duration_ms: 0.529003
   type: 'test'
   ...
-1..51
-# tests 51
+1..55
+# tests 55
 # suites 0
-# pass 51
+# pass 55
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 300.016468
+# duration_ms 378.075726

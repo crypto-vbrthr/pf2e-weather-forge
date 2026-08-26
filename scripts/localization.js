@@ -189,7 +189,7 @@ export const WEATHER_FORGE_TRANSLATIONS = {
     "pf2e-weather-forge.windStrength.windy": "windig",
     "pf2e-weather-forge.tabs.forecast": "Vorhersage",
     "pf2e-weather-forge.forecast.title": "Wettervorhersage",
-    "pf2e-weather-forge.forecast.hint": "Die Vorhersage basiert auf der aktuellen Wetterlage. Später generiertes Wetter orientiert sich daran, kann aber plausibel abweichen.",
+    "pf2e-weather-forge.forecast.summaryHint": "Die Vorhersage basiert auf der aktuellen Wetterlage. Später generiertes Wetter orientiert sich daran, kann aber plausibel abweichen.",
     "pf2e-weather-forge.forecast.generate": "Vorhersage aktualisieren",
     "pf2e-weather-forge.forecast.publishGM": "Vorhersage an GM senden",
     "pf2e-weather-forge.forecast.empty": "Noch keine Vorhersage erstellt.",
@@ -421,7 +421,7 @@ export const WEATHER_FORGE_TRANSLATIONS = {
     "pf2e-weather-forge.windStrength.windy": "windy",
     "pf2e-weather-forge.tabs.forecast": "Forecast",
     "pf2e-weather-forge.forecast.title": "Weather Forecast",
-    "pf2e-weather-forge.forecast.hint": "The forecast is based on the current weather pattern. Future generated weather follows it, but may plausibly differ.",
+    "pf2e-weather-forge.forecast.summaryHint": "The forecast is based on the current weather pattern. Future generated weather follows it, but may plausibly differ.",
     "pf2e-weather-forge.forecast.generate": "Update Forecast",
     "pf2e-weather-forge.forecast.publishGM": "Send Forecast to GM",
     "pf2e-weather-forge.forecast.empty": "No forecast has been created yet.",
@@ -481,7 +481,7 @@ export const WEATHER_FORGE_TRANSLATIONS = {
 const WEATHER_FORGE_INTEGRATION_TRANSLATIONS = {
   de: {
     "pf2e-weather-forge.calendarIntegration.title": "Calendar-Forge-Integration",
-    "pf2e-weather-forge.calendarIntegration.source": "Kalenderquelle",
+    "pf2e-weather-forge.calendarIntegration.sourceLabel": "Kalenderquelle",
     "pf2e-weather-forge.calendarIntegration.region": "Calendar-Forge-Region",
     "pf2e-weather-forge.calendarIntegration.moon": "Mond für Weather Forge",
     "pf2e-weather-forge.calendarIntegration.mode": "Wetterwechsel bei neuer Tagesphase",
@@ -526,7 +526,7 @@ const WEATHER_FORGE_INTEGRATION_TRANSLATIONS = {
     "pf2e-weather-forge.notification.queuedPreviewStale": "Die vorbereitete Vorschau für die nächste Tagesphase wurde verworfen, weil sich das Ausgangswetter oder der Kalenderkontext geändert hat.",
     "pf2e-weather-forge.notification.catchupLimit": "Der Zeitsprung überschreitet die sichere Catch-up-Grenze der Weather Forge. Das Wetter wurde nicht teilweise fortgeschrieben; verwende einen kleineren Zeitsprung oder setze das aktuelle Wetter neu.",
     "pf2e-weather-forge.cityIntegration.title": "City-Forge-Kontext",
-    "pf2e-weather-forge.cityIntegration.source": "Klimaquelle",
+    "pf2e-weather-forge.cityIntegration.sourceLabel": "Klimaquelle",
     "pf2e-weather-forge.cityIntegration.settlement": "City-Forge-Siedlung",
     "pf2e-weather-forge.cityIntegration.selectSettlement": "Siedlung auswählen …",
     "pf2e-weather-forge.cityIntegration.settlementHint": "Die Auswahl einer Siedlung aktiviert automatisch die Klimaquelle „City-Forge-Siedlung“.",
@@ -561,7 +561,7 @@ const WEATHER_FORGE_INTEGRATION_TRANSLATIONS = {
   },
   en: {
     "pf2e-weather-forge.calendarIntegration.title": "Calendar Forge Integration",
-    "pf2e-weather-forge.calendarIntegration.source": "Calendar source",
+    "pf2e-weather-forge.calendarIntegration.sourceLabel": "Calendar source",
     "pf2e-weather-forge.calendarIntegration.region": "Calendar Forge region",
     "pf2e-weather-forge.calendarIntegration.moon": "Moon used by Weather Forge",
     "pf2e-weather-forge.calendarIntegration.mode": "Weather change on a new daypart",
@@ -606,7 +606,7 @@ const WEATHER_FORGE_INTEGRATION_TRANSLATIONS = {
     "pf2e-weather-forge.notification.queuedPreviewStale": "The prepared preview for the next daypart was discarded because the source weather or calendar context changed.",
     "pf2e-weather-forge.notification.catchupLimit": "The time jump exceeds Weather Forge's safe catch-up limit. Weather was not partially advanced; use a smaller time jump or reset the current weather.",
     "pf2e-weather-forge.cityIntegration.title": "City Forge Context",
-    "pf2e-weather-forge.cityIntegration.source": "Climate source",
+    "pf2e-weather-forge.cityIntegration.sourceLabel": "Climate source",
     "pf2e-weather-forge.cityIntegration.settlement": "City Forge settlement",
     "pf2e-weather-forge.cityIntegration.selectSettlement": "Select settlement …",
     "pf2e-weather-forge.cityIntegration.settlementHint": "Selecting a settlement automatically activates the “City Forge settlement” climate source.",
@@ -655,44 +655,15 @@ function weatherForgeFallbackDictionary() {
 }
 
 export function installWeatherForgeLocalizationFallback(moduleId) {
-  if (game.i18n.__pf2eWeatherForgeFallbackInstalled) return;
-
-  const originalLocalize = game.i18n.localize.bind(game.i18n);
-  const originalFormat = game.i18n.format?.bind(game.i18n);
-
-  function getDictionary() {
-    return weatherForgeFallbackDictionary();
-  }
-
-  function fallbackLocalize(key) {
-    if (!String(key).startsWith(moduleId)) return key;
-    const dictionary = getDictionary();
-    return dictionary[key] ?? WEATHER_FORGE_INTEGRATION_TRANSLATIONS.en?.[key] ?? WEATHER_FORGE_TRANSLATIONS.en?.[key] ?? key;
-  }
-
-  game.i18n.localize = function patchedWeatherForgeLocalize(key) {
-    const localized = originalLocalize(key);
-    if (localized !== key) return localized;
-    return fallbackLocalize(key);
-  };
-
-  if (originalFormat) {
-    game.i18n.format = function patchedWeatherForgeFormat(key, data = {}) {
-      const formatted = originalFormat(key, data);
-      if (formatted !== key) return formatted;
-
-      let template = fallbackLocalize(key);
-      if (template === key) return key;
-      for (const [placeholder, value] of Object.entries(data)) {
-        template = template.replaceAll(`{${placeholder}}`, String(value));
-      }
-      return template;
-    };
-  }
-
-  game.i18n.__pf2eWeatherForgeFallbackInstalled = true;
+  // Foundry V14 exposes parts of Localization (notably `format`) as read-only.
+  // Never monkey-patch game.i18n here. Keep the fallback available through
+  // module-local helpers instead, so package localization remains compatible
+  // with current and future Foundry localization implementations.
+  return Object.freeze({
+    localize: key => weatherForgeLocalize(moduleId, key),
+    format: (key, data = {}) => weatherForgeFormat(moduleId, key, data)
+  });
 }
-
 
 export function weatherForgeLocalize(moduleId, key) {
   const rawKey = String(key ?? "");
