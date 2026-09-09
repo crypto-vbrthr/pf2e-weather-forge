@@ -365,3 +365,12 @@ Feature availability may change between releases.
 - Preview invalidation on Scene / City settlement changes
 - Public climate/context API
 - No automatic City Dynamic State mutations
+
+## Ambience Forge Integration
+
+- Optional semantic weather-context provider for Ambience Forge.
+- Persistent current weather context survives ambience start order within the session.
+- User-configurable state-group and state API keys.
+- Discovery-assisted suggestions from Ambience Forge without forcing standard key names.
+- Weather Forge never manipulates Ambience Forge tracks directly.
+

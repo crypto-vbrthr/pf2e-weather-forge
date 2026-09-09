@@ -408,6 +408,48 @@
         {{/if}}
       </article>
 
+      <article class="weather-panel settings-section ambience-integration-settings">
+        <h2>{{labels.settingsTab_ambienceTitle}}</h2>
+
+        <div class="ambience-integration-status {{#if appSettings.ambience.compatible}}is-compatible{{/if}}">
+          <div>
+            <i class="fas fa-volume-high"></i>
+            <strong>{{labels.ambienceIntegration_statusLabel}}</strong>
+            <span>{{appSettings.ambience.statusLabel}}</span>
+          </div>
+          {{#if appSettings.ambience.apiVersion}}<small>API {{appSettings.ambience.apiVersion}}</small>{{/if}}
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" name="ambienceIntegrationEnabled" {{#if appSettings.ambience.enabled}}checked{{/if}}>
+          <span>{{labels.ambienceIntegration_enable}}</span>
+        </label>
+        <p class="weather-hint">{{labels.ambienceIntegration_hint}}</p>
+
+        <div class="form-group">
+          <label>{{labels.ambienceIntegration_group}}</label>
+          <input type="text" name="ambienceStateGroupKey" value="{{appSettings.ambience.groupKey}}" list="weather-forge-ambience-groups" autocomplete="off">
+          <datalist id="weather-forge-ambience-groups">
+            {{#each appSettings.ambience.groupSuggestions}}<option value="{{key}}">{{label}}</option>{{/each}}
+          </datalist>
+          <small>{{labels.ambienceIntegration_groupHint}}</small>
+        </div>
+
+        <h3>{{labels.ambienceIntegration_mappingTitle}}</h3>
+        <p class="weather-hint">{{labels.ambienceIntegration_mappingHint}}</p>
+        <datalist id="weather-forge-ambience-states">
+          {{#each appSettings.ambience.stateSuggestions}}<option value="{{this}}"></option>{{/each}}
+        </datalist>
+        <div class="ambience-weather-mapping-grid">
+          {{#each appSettings.ambience.mappings}}
+            <label>
+              <span>{{label}}</span>
+              <input type="text" name="{{fieldName}}" value="{{value}}" list="weather-forge-ambience-states" autocomplete="off">
+            </label>
+          {{/each}}
+        </div>
+      </article>
+
       <article class="weather-panel settings-section">
         <h2>{{labels.settingsTab_outputTitle}}</h2>
         <div class="form-group">

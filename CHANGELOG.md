@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0-alpha.1 – Optional Ambience Forge Weather Context
+
+- Added optional integration with Ambience Forge 0.2.x semantic context states.
+- Weather Forge can publish its accepted current weather as persistent Ambience Forge context owned by `pf2e-weather-forge`.
+- Added user-configurable API group key and mappings for clear, cloudy, fog, rain, heavy rain, storm, snow, and blizzard conditions.
+- Uses Ambience Forge state discovery to suggest available group/state keys while still allowing custom keys.
+- Re-publishes current weather when Ambience Forge becomes ready, so module load order does not matter.
+- Weather changes from manual acceptance, Calendar Forge automation, reset, or other legitimate `weatherState` updates all follow the same semantic integration path.
+- Disabling the integration clears only Weather Forge-owned context.
+- Ambience Forge remains fully optional; Weather Forge continues to operate normally when it is absent or incompatible.
+- Added public API diagnostics for Ambience Forge status, configured mapping, and manual resynchronization.
+- Added automated coverage for semantic weather resolution, custom mappings, persistent context publication, optional cleanup, UI controls, and startup hooks.
+- No weather-generation or balance changes.
+
 ## 1.1.3.4 – Calendar Forge Startup Resume Regression Hotfix
 
 - Restored the Calendar Forge startup-race hardening that was accidentally absent from the 1.1.3.x runtime while its regression tests were still present.
@@ -195,6 +209,20 @@ No weather-generation, calendar-integration or runtime behavior was changed afte
 - Fixed a stray CSS brace in the history styles.
 
 # Changelog
+
+## 1.2.0-alpha.1 – Optional Ambience Forge Weather Context
+
+- Added optional integration with Ambience Forge 0.2.x semantic context states.
+- Weather Forge can publish its accepted current weather as persistent Ambience Forge context owned by `pf2e-weather-forge`.
+- Added user-configurable API group key and mappings for clear, cloudy, fog, rain, heavy rain, storm, snow, and blizzard conditions.
+- Uses Ambience Forge state discovery to suggest available group/state keys while still allowing custom keys.
+- Re-publishes current weather when Ambience Forge becomes ready, so module load order does not matter.
+- Weather changes from manual acceptance, Calendar Forge automation, reset, or other legitimate `weatherState` updates all follow the same semantic integration path.
+- Disabling the integration clears only Weather Forge-owned context.
+- Ambience Forge remains fully optional; Weather Forge continues to operate normally when it is absent or incompatible.
+- Added public API diagnostics for Ambience Forge status, configured mapping, and manual resynchronization.
+- Added automated coverage for semantic weather resolution, custom mappings, persistent context publication, optional cleanup, UI controls, and startup hooks.
+- No weather-generation or balance changes.
 
 ## v0.7.1 – ApplicationV2 Template Helper Fix
 

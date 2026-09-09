@@ -1,13 +1,13 @@
-# PF2e Weather Forge 1.1.3
+# PF2e Weather Forge 1.2.0-alpha.1
 
 PF2e Weather Forge is a persistent, localized weather simulation for Foundry VTT and Pathfinder 2e.
 
-It supports climate-driven generation, forecasts, history, extreme weather, an internal Golarion calendar fallback, optional Calendar Forge time integration, and now optional City Forge active-Scene climate integration.
+It supports climate-driven generation, forecasts, history, extreme weather, an internal Golarion calendar fallback, optional Calendar Forge time integration, optional City Forge active-Scene climate integration, and optional Ambience Forge semantic weather-audio integration.
 
 
 ## Part of the Forge Suite
 
-**Weaather Forge** is part of the **Forge Suite**, a growing collection of Foundry VTT modules and add-ons built for the busy Game Master. The suite is designed to reduce preparation and bookkeeping, make common GM tasks easier, and add useful tools that help make running and playing campaigns smoother and more enjoyable.
+**Weather Forge** is part of the **Forge Suite**, a growing collection of Foundry VTT modules and add-ons built for the busy Game Master. The suite is designed to reduce preparation and bookkeeping, make common GM tasks easier, and add useful tools that help make running and playing campaigns smoother and more enjoyable.
 
 An overview of the Forge Suite, its modules, add-ons, and shared documentation is available here:
 
@@ -26,6 +26,36 @@ Suggestions and feature requests are equally welcome. Even small ideas can lead 
 
 **Open an issue here:** https://github.com/crypto-vbrthr/pf2e-weather-forge/issues
 
+
+
+## 1.2.0: Ambience Forge Integration
+
+Weather Forge can optionally publish its accepted current weather to Ambience Forge as a semantic context state. It does not control audio tracks directly.
+
+For example, Weather Forge may publish:
+
+```text
+weather = rain
+```
+
+or:
+
+```text
+weather = storm
+```
+
+Ambience Forge decides how each compatible composition sounds. A forest can increase rain and wind, reduce animal calls, and enable thunder, while an unrelated composition without the matching weather state is left untouched.
+
+The integration is disabled by default and can be configured in the Weather Forge **Settings** tab. The user can select or enter:
+
+- the Ambience Forge state-group API key, normally `weather`;
+- mappings for clear, cloudy, fog, rain, heavy rain, storm, snow, and blizzard conditions.
+
+When Ambience Forge exposes state discovery, Weather Forge suggests detected API keys. Custom keys remain supported.
+
+The published context is persistent for the current Foundry session, so an ambience started after the weather changed still receives the current weather state.
+
+See `AMBIENCE-FORGE-INTEGRATION.md` for the full integration contract.
 
 ## 1.1.0: City Forge Deep Integration
 
@@ -106,6 +136,7 @@ See `CITY-FORGE-INTEGRATION.md` for the integration contract and mapping behavio
 - PF2e: supported
 - City Forge: optional, designed for 0.8.1+
 - Calendar Forge: optional
+- Ambience Forge: optional, semantic context integration designed for 0.2.x+
 - No hard module dependencies
 
 ## Existing functionality retained

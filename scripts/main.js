@@ -16,6 +16,17 @@ import {
   resolveEffectiveClimateContext
 } from "./city-source.js";
 
+import {
+  DEFAULT_AMBIENCE_WEATHER_MAPPING,
+  ambienceForgeRuntimeStatus,
+  configuredAmbienceGroupKey,
+  configuredAmbienceIntegrationEnabled,
+  configuredAmbienceWeatherMapping,
+  resolveAmbienceWeatherKind,
+  scheduleAmbienceSync,
+  syncAmbienceFromCurrentWeather
+} from "./ambience-source.js";
+
 
 function isSettingRegistered(key) {
   return game.settings?.settings?.has(`${MODULE_ID}.${key}`) ?? false;
@@ -29,7 +40,8 @@ function registerWeatherForgeSettings() {
       scope: "world",
       config: false,
       type: Object,
-      default: defaultWeatherState()
+      default: defaultWeatherState(),
+      onChange: (weather) => { void syncAmbienceFromCurrentWeather({ force: false }); }
     });
   }
 
@@ -247,6 +259,31 @@ function registerWeatherForgeSettings() {
       scope: "world", config: false, type: Object, default: defaultCalendarDrivenState()
     });
   }
+
+  if (!isSettingRegistered("ambienceIntegrationEnabled")) {
+    game.settings.register(MODULE_ID, "ambienceIntegrationEnabled", {
+      name: `${MODULE_ID}.settings.ambienceIntegrationEnabled.name`,
+      hint: `${MODULE_ID}.settings.ambienceIntegrationEnabled.hint`,
+      scope: "world", config: false, type: Boolean, default: false,
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
+  if (!isSettingRegistered("ambienceStateGroupKey")) {
+    game.settings.register(MODULE_ID, "ambienceStateGroupKey", {
+      name: `${MODULE_ID}.settings.ambienceStateGroupKey.name`,
+      hint: `${MODULE_ID}.settings.ambienceStateGroupKey.hint`,
+      scope: "world", config: false, type: String, default: "weather",
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
+  if (!isSettingRegistered("ambienceWeatherMapping")) {
+    game.settings.register(MODULE_ID, "ambienceWeatherMapping", {
+      name: `${MODULE_ID}.settings.ambienceWeatherMapping.name`,
+      hint: `${MODULE_ID}.settings.ambienceWeatherMapping.hint`,
+      scope: "world", config: false, type: Object, default: { ...DEFAULT_AMBIENCE_WEATHER_MAPPING },
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
 }
 
 let weatherForgeApp;
@@ -441,12 +478,18 @@ for (const hook of [
   });
 }
 
+
+Hooks.on("ambienceForgeReady", () => {
+  void syncAmbienceFromCurrentWeather({ force: true });
+});
+
 Hooks.once("ready", async () => {
   // Foundry normally runs the init hook before ready, but worlds that load/refresh
   // module code late can otherwise expose the public API without registered settings.
   // Re-check registration here so every public weather read has a valid backing state.
   registerWeatherForgeSettings();
   await initializeCityForgeClimateSettings();
+  await syncAmbienceFromCurrentWeather({ force: true });
 
   game.modules.get(MODULE_ID).api = {
     version: 1,
@@ -454,11 +497,20 @@ Hooks.once("ready", async () => {
       calendarForge: true,
       cityForgeClimate: true,
       activeSceneClimate: true,
-      currentWeatherContext: true
+      currentWeatherContext: true,
+      ambienceForgeContext: true
     }),
     open: openWeatherForge,
     app: () => weatherForgeApp,
     getWeather: () => game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(),
+    getAmbienceForgeStatus: () => ambienceForgeRuntimeStatus(),
+    getAmbienceIntegration: () => ({
+      enabled: configuredAmbienceIntegrationEnabled(),
+      group: configuredAmbienceGroupKey(),
+      mapping: configuredAmbienceWeatherMapping(),
+      currentKind: resolveAmbienceWeatherKind(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState())
+    }),
+    syncAmbience: () => syncAmbienceFromCurrentWeather({ force: true }),
     getCalendarSourceStatus: () => calendarForgeRuntimeStatus(),
     getCalendar: async () => effectiveCalendarSourceMode() === "calendarForge"
       ? (await getCalendarForgeSnapshot({ fallbackWeather: game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState() }))

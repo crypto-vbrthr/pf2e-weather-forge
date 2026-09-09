@@ -649,3 +649,57 @@
     text-align: left;
   }
 }
+
+/* 1.2.0 Ambience Forge semantic weather integration */
+.pf2e-weather-forge .ambience-integration-status{
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(120, 120, 120, 0.28);
+  border-radius: 7px;
+  padding: 8px;
+  margin: 8px 0 10px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.pf2e-weather-forge .ambience-integration-status.is-compatible{
+  border-color: color-mix(in srgb, currentColor 38%, rgba(120, 120, 120, 0.28));
+}
+
+.pf2e-weather-forge .ambience-integration-status > div{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf2e-weather-forge .ambience-integration-status > div span{
+  margin-left: auto;
+  text-align: right;
+}
+
+.pf2e-weather-forge .ambience-integration-status small{
+  opacity: 0.78;
+}
+
+.pf2e-weather-forge .ambience-weather-mapping-grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 10px;
+}
+
+.pf2e-weather-forge .ambience-weather-mapping-grid label{
+  display: grid;
+  grid-template-columns: minmax(92px, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pf2e-weather-forge .ambience-weather-mapping-grid label span{
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .pf2e-weather-forge .ambience-weather-mapping-grid{
+    grid-template-columns: 1fr;
+  }
+}

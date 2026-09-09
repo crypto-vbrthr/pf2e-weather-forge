@@ -26,6 +26,17 @@ import {
   weatherContextMismatch
 } from "./city-source.js";
 
+import {
+  AMBIENCE_WEATHER_KINDS,
+  DEFAULT_AMBIENCE_WEATHER_MAPPING,
+  aggregateAmbienceStateGroups,
+  ambienceForgeRuntimeStatus,
+  configuredAmbienceGroupKey,
+  configuredAmbienceIntegrationEnabled,
+  configuredAmbienceWeatherMapping,
+  getAmbienceStateCatalog
+} from "./ambience-source.js";
+
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 const TEMPLATE_LABEL_KEYS = [
@@ -68,8 +79,16 @@ const TEMPLATE_LABEL_KEYS = [
   ["settings_historyLimit_name", "pf2e-weather-forge.settings.historyLimit.name"],
   ["settingsTab_calendarTitle", "pf2e-weather-forge.settingsTab.calendarTitle"],
   ["settingsTab_climateTitle", "pf2e-weather-forge.settingsTab.climateTitle"],
+  ["settingsTab_ambienceTitle", "pf2e-weather-forge.settingsTab.ambienceTitle"],
   ["settingsTab_outputTitle", "pf2e-weather-forge.settingsTab.outputTitle"],
   ["settingsTab_save", "pf2e-weather-forge.settingsTab.save"],
+  ["ambienceIntegration_enable", "pf2e-weather-forge.ambienceIntegration.enable"],
+  ["ambienceIntegration_hint", "pf2e-weather-forge.ambienceIntegration.hint"],
+  ["ambienceIntegration_statusLabel", "pf2e-weather-forge.ambienceIntegration.statusLabel"],
+  ["ambienceIntegration_group", "pf2e-weather-forge.ambienceIntegration.group"],
+  ["ambienceIntegration_groupHint", "pf2e-weather-forge.ambienceIntegration.groupHint"],
+  ["ambienceIntegration_mappingTitle", "pf2e-weather-forge.ambienceIntegration.mappingTitle"],
+  ["ambienceIntegration_mappingHint", "pf2e-weather-forge.ambienceIntegration.mappingHint"],
   ["tabs_forecast", "pf2e-weather-forge.tabs.forecast"],
   ["tabs_generator", "pf2e-weather-forge.tabs.generator"],
   ["tabs_history", "pf2e-weather-forge.tabs.history"],
@@ -350,6 +369,13 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     };
     const climateSourceMode = configuredClimateSourceMode();
     const cityStatus = cityForgeRuntimeStatus();
+    const ambienceStatus = ambienceForgeRuntimeStatus();
+    const ambienceGroupKey = configuredAmbienceGroupKey();
+    const ambienceMapping = configuredAmbienceWeatherMapping();
+    const ambienceGroups = aggregateAmbienceStateGroups(getAmbienceStateCatalog());
+    const selectedAmbienceGroup = ambienceGroups.find(group => group.key === ambienceGroupKey) ?? null;
+    const stateSuggestionKeys = new Set(selectedAmbienceGroup?.states?.map(state => state.key) ?? []);
+    for (const value of Object.values(ambienceMapping)) if (value) stateSuggestionKeys.add(value);
     return {
       allowExtreme,
       climateSourceModes: CLIMATE_SOURCE_MODES.map(key => ({
@@ -403,6 +429,32 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
         label: game.i18n.localize(`${MODULE_ID}.settings.historyLimit.${key}`),
         selected: key === configuredLimit
       })),
+      ambience: {
+        enabled: configuredAmbienceIntegrationEnabled(),
+        installed: ambienceStatus.installed,
+        active: ambienceStatus.active,
+        compatible: ambienceStatus.compatible,
+        discovery: ambienceStatus.discovery,
+        apiVersion: ambienceStatus.apiVersion,
+        statusLabel: game.i18n.localize(`${MODULE_ID}.ambienceIntegration.status.${
+          !ambienceStatus.installed ? "notInstalled"
+            : !ambienceStatus.active ? "inactive"
+              : !ambienceStatus.compatible ? "incompatible"
+                : "available"
+        }`),
+        groupKey: ambienceGroupKey,
+        groupSuggestions: ambienceGroups.map(group => ({
+          key: group.key,
+          label: group.names?.[0] ? `${group.names[0]} (${group.key})` : group.key
+        })),
+        stateSuggestions: [...stateSuggestionKeys].sort((a, b) => a.localeCompare(b)),
+        mappings: AMBIENCE_WEATHER_KINDS.map(key => ({
+          key,
+          fieldName: `ambienceMap_${key}`,
+          label: game.i18n.localize(`${MODULE_ID}.ambienceIntegration.weather.${key}`),
+          value: ambienceMapping[key] ?? DEFAULT_AMBIENCE_WEATHER_MAPPING[key] ?? ""
+        }))
+      },
       currentClimateZone: current.climateZone
     };
   }
@@ -870,6 +922,19 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       });
       await game.settings.set(MODULE_ID, "daypartBoundaries", boundaries);
     }
+
+    const ambienceEnabled = fd.get("ambienceIntegrationEnabled") === "on";
+    const ambienceGroupKey = String(fd.get("ambienceStateGroupKey") ?? configuredAmbienceGroupKey() ?? "weather").trim() || "weather";
+    const ambienceMapping = { ...configuredAmbienceWeatherMapping() };
+    for (const key of AMBIENCE_WEATHER_KINDS) {
+      const field = `ambienceMap_${key}`;
+      if (fd.has(field)) ambienceMapping[key] = String(fd.get(field) ?? "").trim();
+    }
+
+    await game.settings.set(MODULE_ID, "ambienceIntegrationEnabled", ambienceEnabled);
+    await game.settings.set(MODULE_ID, "ambienceStateGroupKey", ambienceGroupKey);
+    await game.settings.set(MODULE_ID, "ambienceWeatherMapping", ambienceMapping);
+
 
     const historyLimit = String(fd.get("historyLimit") ?? getHistoryLimit());
     if (HISTORY_LIMITS.includes(historyLimit)) await game.settings.set(MODULE_ID, "historyLimit", historyLimit);
