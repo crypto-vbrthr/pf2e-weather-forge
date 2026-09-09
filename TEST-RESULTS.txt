@@ -1,12 +1,13 @@
-PF2e Weather Forge 1.2.0-alpha.4
+PF2e Weather Forge 1.2.0-rc.1
 
 Automated tests: 77/77 passed
 JavaScript syntax checks: passed
 Localization key parity (de/en): passed
 Coverage run: passed
 
-Focus of this alpha:
-- independent Ambience Forge wind context
-- user-configurable wind group/state mapping
-- weather + wind simultaneous semantic publication
-- owner-safe wind cleanup
+Release-candidate focus:
+- feature freeze for the 1.2.0 line
+- Ambience Forge weather + independent wind context
+- optional owner-based composition auto-start
+- discovery-backed, user-configurable semantic mappings
+- release metadata and documentation consistency

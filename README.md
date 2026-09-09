@@ -1,4 +1,4 @@
-# PF2e Weather Forge 1.2.0-alpha.4
+# PF2e Weather Forge 1.2.0-rc.1
 
 PF2e Weather Forge is a persistent, localized weather simulation for Foundry VTT and Pathfinder 2e.
 
@@ -49,11 +49,13 @@ Ambience Forge decides how each compatible composition sounds. A forest can incr
 The integration is disabled by default and can be configured in the Weather Forge **Settings** tab. The user can select or enter:
 
 - the Ambience Forge state-group API key, normally `weather`;
-- mappings for clear, cloudy, fog, rain, heavy rain, storm, snow, and blizzard conditions.
+- mappings for clear, cloudy, fog, rain, heavy rain, storm, snow, and blizzard conditions;
+- an optional independent `wind` group with configurable mappings from calm through gale;
+- an optional Ambience Forge composition that Weather Forge can request automatically while the integration is enabled.
 
 When Ambience Forge exposes state discovery, Weather Forge suggests detected API keys. Custom keys remain supported.
 
-The published context is persistent for the current Foundry session, so an ambience started after the weather changed still receives the current weather state.
+The published context is persistent for the current Foundry session, so an ambience started after the weather changed still receives the current weather and wind states. When composition auto-start is enabled, Weather Forge publishes the semantic context before requesting the selected composition, so it starts directly in the correct conditions.
 
 See `AMBIENCE-FORGE-INTEGRATION.md` for the full integration contract.
 

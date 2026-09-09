@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0-rc.1 – Release Candidate
+
+- Release candidate for the 1.2.0 Ambience Forge integration line.
+- Feature freeze: only bug fixes and release-critical compatibility corrections are planned before 1.2.0.
+- Consolidated module/package/release-download version metadata and refreshed release documentation.
+- Ambience Forge weather, independent wind context, optional composition auto-start, discovery-backed mappings, and owner-safe release behavior are unchanged from 1.2.0-alpha.4.
+- No weather-generation, forecast, calendar, City Forge, or balance changes.
+
 ## 1.2.0-alpha.4 – Independent Wind Context
 
 - Weather Forge can optionally publish wind strength as a second, independent Ambience Forge context group.
