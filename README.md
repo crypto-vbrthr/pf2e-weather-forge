@@ -1,4 +1,4 @@
-# PF2e Weather Forge 1.2.0-alpha.3
+# PF2e Weather Forge 1.2.0-alpha.4
 
 PF2e Weather Forge is a persistent, localized weather simulation for Foundry VTT and Pathfinder 2e.
 
@@ -184,3 +184,8 @@ This fixes both symptoms caused by the previous live-control handler:
 
 ### 1.1.3.1 settings hardening
 Weather Forge now re-checks its hidden world-setting registration during Foundry `ready` before its public API is exposed. This is a defensive lifecycle fallback for environments where the earlier `init` registration was missed.
+
+
+### Ambience Forge wind context
+
+When enabled, Weather Forge can publish wind separately from weather using the semantic `wind` group (`calm`, `breeze`, `windy`, `strong-wind`, `gale`). This allows an ambience to combine, for example, `weather = rain` with `wind = strong-wind` without coupling the two concepts.

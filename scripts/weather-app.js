@@ -28,12 +28,17 @@ import {
 
 import {
   AMBIENCE_WEATHER_KINDS,
+  AMBIENCE_WIND_KINDS,
   DEFAULT_AMBIENCE_WEATHER_MAPPING,
+  DEFAULT_AMBIENCE_WIND_MAPPING,
   aggregateAmbienceStateGroups,
   ambienceForgeRuntimeStatus,
   configuredAmbienceGroupKey,
   configuredAmbienceIntegrationEnabled,
   configuredAmbienceWeatherMapping,
+  configuredAmbienceWindIntegrationEnabled,
+  configuredAmbienceWindGroupKey,
+  configuredAmbienceWindMapping,
   configuredAmbienceAutoStartEnabled,
   configuredAmbienceCompositionId,
   getAmbienceOwnedCompositionIds,
@@ -97,6 +102,12 @@ const TEMPLATE_LABEL_KEYS = [
   ["ambienceIntegration_composition", "pf2e-weather-forge.ambienceIntegration.composition"],
   ["ambienceIntegration_compositionNone", "pf2e-weather-forge.ambienceIntegration.compositionNone"],
   ["ambienceIntegration_controlled", "pf2e-weather-forge.ambienceIntegration.controlled"],
+  ["ambienceIntegration_windEnable", "pf2e-weather-forge.ambienceIntegration.windEnable"],
+  ["ambienceIntegration_windHint", "pf2e-weather-forge.ambienceIntegration.windHint"],
+  ["ambienceIntegration_windGroup", "pf2e-weather-forge.ambienceIntegration.windGroup"],
+  ["ambienceIntegration_windGroupHint", "pf2e-weather-forge.ambienceIntegration.windGroupHint"],
+  ["ambienceIntegration_windMappingTitle", "pf2e-weather-forge.ambienceIntegration.windMappingTitle"],
+  ["ambienceIntegration_windMappingHint", "pf2e-weather-forge.ambienceIntegration.windMappingHint"],
 
   ["tabs_forecast", "pf2e-weather-forge.tabs.forecast"],
   ["tabs_generator", "pf2e-weather-forge.tabs.generator"],
@@ -381,6 +392,9 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const ambienceStatus = ambienceForgeRuntimeStatus();
     const ambienceGroupKey = configuredAmbienceGroupKey();
     const ambienceMapping = configuredAmbienceWeatherMapping();
+    const ambienceWindEnabled = configuredAmbienceWindIntegrationEnabled();
+    const ambienceWindGroupKey = configuredAmbienceWindGroupKey();
+    const ambienceWindMapping = configuredAmbienceWindMapping();
     const ambienceCatalog = getAmbienceStateCatalog();
     const ambienceGroups = aggregateAmbienceStateGroups(ambienceCatalog);
     const ambienceCompositionId = configuredAmbienceCompositionId();
@@ -388,6 +402,9 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const selectedAmbienceGroup = ambienceGroups.find(group => group.key === ambienceGroupKey) ?? null;
     const stateSuggestionKeys = new Set(selectedAmbienceGroup?.states?.map(state => state.key) ?? []);
     for (const value of Object.values(ambienceMapping)) if (value) stateSuggestionKeys.add(value);
+    const selectedAmbienceWindGroup = ambienceGroups.find(group => group.key === ambienceWindGroupKey) ?? null;
+    const windStateSuggestionKeys = new Set(selectedAmbienceWindGroup?.states?.map(state => state.key) ?? []);
+    for (const value of Object.values(ambienceWindMapping)) if (value) windStateSuggestionKeys.add(value);
     return {
       allowExtreme,
       climateSourceModes: CLIMATE_SOURCE_MODES.map(key => ({
@@ -479,6 +496,19 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
           fieldName: `ambienceMap_${key}`,
           label: game.i18n.localize(`${MODULE_ID}.ambienceIntegration.weather.${key}`),
           value: ambienceMapping[key] ?? DEFAULT_AMBIENCE_WEATHER_MAPPING[key] ?? ""
+        })),
+        windEnabled: ambienceWindEnabled,
+        windGroupKey: ambienceWindGroupKey,
+        windGroupSuggestions: ambienceGroups.map(group => ({
+          key: group.key,
+          label: group.names?.[0] ? `${group.names[0]} (${group.key})` : group.key
+        })),
+        windStateSuggestions: [...windStateSuggestionKeys].sort((a, b) => a.localeCompare(b)),
+        windMappings: AMBIENCE_WIND_KINDS.map(key => ({
+          key,
+          fieldName: `ambienceWindMap_${key}`,
+          label: game.i18n.localize(`${MODULE_ID}.ambienceIntegration.wind.${key}`),
+          value: ambienceWindMapping[key] ?? DEFAULT_AMBIENCE_WIND_MAPPING[key] ?? ""
         }))
       },
       currentClimateZone: current.climateZone
@@ -958,12 +988,22 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
       const field = `ambienceMap_${key}`;
       if (fd.has(field)) ambienceMapping[key] = String(fd.get(field) ?? "").trim();
     }
+    const ambienceWindEnabled = fd.get("ambienceWindIntegrationEnabled") === "on";
+    const ambienceWindGroupKey = String(fd.get("ambienceWindStateGroupKey") ?? configuredAmbienceWindGroupKey() ?? "wind").trim() || "wind";
+    const ambienceWindMapping = { ...configuredAmbienceWindMapping() };
+    for (const key of AMBIENCE_WIND_KINDS) {
+      const field = `ambienceWindMap_${key}`;
+      if (fd.has(field)) ambienceWindMapping[key] = String(fd.get(field) ?? "").trim();
+    }
 
     await game.settings.set(MODULE_ID, "ambienceIntegrationEnabled", ambienceEnabled);
     await game.settings.set(MODULE_ID, "ambienceAutoStartEnabled", ambienceAutoStart);
     await game.settings.set(MODULE_ID, "ambienceCompositionId", ambienceCompositionId);
     await game.settings.set(MODULE_ID, "ambienceStateGroupKey", ambienceGroupKey);
     await game.settings.set(MODULE_ID, "ambienceWeatherMapping", ambienceMapping);
+    await game.settings.set(MODULE_ID, "ambienceWindIntegrationEnabled", ambienceWindEnabled);
+    await game.settings.set(MODULE_ID, "ambienceWindStateGroupKey", ambienceWindGroupKey);
+    await game.settings.set(MODULE_ID, "ambienceWindMapping", ambienceWindMapping);
 
 
     const historyLimit = String(fd.get("historyLimit") ?? getHistoryLimit());

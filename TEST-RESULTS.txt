@@ -1,16 +1,12 @@
-PF2e Weather Forge 1.2.0-alpha.3
+PF2e Weather Forge 1.2.0-alpha.4
 
-Automated test suite: 72/72 passed.
+Automated tests: 77/77 passed
+JavaScript syntax checks: passed
+Localization key parity (de/en): passed
+Coverage run: passed
 
-Coverage includes:
-- Ambience Forge semantic weather mapping
-- persistent context publishing and ownership conflict handling
-- optional owner-based Ambience composition auto-start and release
-- Ambience discovery/settings UI
-- Calendar Forge and City Forge integrations
-- runtime hardening and startup behavior
-- localization parity and Foundry V14 compatibility
-- release contract and template action coverage
-
-Additional checks:
-- JavaScript syntax check passed for all runtime scripts.
+Focus of this alpha:
+- independent Ambience Forge wind context
+- user-configurable wind group/state mapping
+- weather + wind simultaneous semantic publication
+- owner-safe wind cleanup

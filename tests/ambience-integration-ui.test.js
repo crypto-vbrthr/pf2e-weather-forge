@@ -13,6 +13,11 @@ test("Weather Forge settings expose optional Ambience Forge semantic mapping con
   assert.match(template, /name="\{\{fieldName\}\}"/);
   assert.match(template, /weather-forge-ambience-groups/);
   assert.match(template, /weather-forge-ambience-states/);
+  assert.match(template, /name="ambienceWindIntegrationEnabled"/);
+  assert.match(template, /name="ambienceWindStateGroupKey"/);
+  assert.match(template, /weather-forge-ambience-wind-states/);
+  assert.match(template, /ambience-wind-mapping-grid/);
+  assert.match(app, /ambienceWindMap_/);
 });
 
 test("Weather Forge republishes current weather when Ambience Forge becomes ready", () => {
@@ -23,6 +28,9 @@ test("Weather Forge republishes current weather when Ambience Forge becomes read
 test("Weather Forge persists user-defined group and state mappings", () => {
   assert.match(app, /game\.settings\.set\(MODULE_ID, "ambienceStateGroupKey"/);
   assert.match(app, /game\.settings\.set\(MODULE_ID, "ambienceWeatherMapping"/);
+  assert.match(app, /game\.settings\.set\(MODULE_ID, "ambienceWindStateGroupKey"/);
+  assert.match(app, /game\.settings\.set\(MODULE_ID, "ambienceWindMapping"/);
+  assert.match(main, /ambienceWindIntegrationEnabled/);
   assert.match(main, /onChange: \(\) => scheduleAmbienceSync\(\)/);
 });
 

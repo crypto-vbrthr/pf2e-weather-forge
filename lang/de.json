@@ -347,5 +347,22 @@
   "pf2e-weather-forge.settings.ambienceAutoStartEnabled.name": "Ambience-Komposition automatisch starten",
   "pf2e-weather-forge.settings.ambienceAutoStartEnabled.hint": "Fordert optional eine bestimmte Ambience-Forge-Komposition an, solange die Integration aktiv ist.",
   "pf2e-weather-forge.settings.ambienceCompositionId.name": "Ambience-Forge-Komposition",
-  "pf2e-weather-forge.settings.ambienceCompositionId.hint": "Die von Weather Forge optional automatisch angeforderte Ambience-Komposition."
+  "pf2e-weather-forge.settings.ambienceCompositionId.hint": "Die von Weather Forge optional automatisch angeforderte Ambience-Komposition.",
+  "pf2e-weather-forge.ambienceIntegration.windEnable": "Windstärke separat an Ambience Forge übertragen",
+  "pf2e-weather-forge.ambienceIntegration.windHint": "Überträgt zusätzlich zur Wetterlage eine unabhängige Wind-Zustandsgruppe. So können z. B. Regen und starker Wind getrennt kombiniert werden.",
+  "pf2e-weather-forge.ambienceIntegration.windGroup": "API-Schlüssel der Wind-Zustandsgruppe",
+  "pf2e-weather-forge.ambienceIntegration.windGroupHint": "Üblicher Forge-Suite-Schlüssel: wind. Erkannte Schlüssel werden vorgeschlagen; eigene Schlüssel können eingetragen werden.",
+  "pf2e-weather-forge.ambienceIntegration.windMappingTitle": "Wind-Zuordnung",
+  "pf2e-weather-forge.ambienceIntegration.windMappingHint": "Ordne die Windstärke den Zustands-Keys der Ambience Forge zu. Die Kategorien folgen der vorhandenen Weather-Forge-Windbeschreibung.",
+  "pf2e-weather-forge.ambienceIntegration.wind.calm": "Windstill (0)",
+  "pf2e-weather-forge.ambienceIntegration.wind.breeze": "Leichte Brise (1–2)",
+  "pf2e-weather-forge.ambienceIntegration.wind.windy": "Windig (3–5)",
+  "pf2e-weather-forge.ambienceIntegration.wind.strong-wind": "Starker Wind (6–8)",
+  "pf2e-weather-forge.ambienceIntegration.wind.gale": "Stürmisch (9–12)",
+  "pf2e-weather-forge.settings.ambienceWindIntegrationEnabled.name": "Ambience-Forge-Windintegration",
+  "pf2e-weather-forge.settings.ambienceWindIntegrationEnabled.hint": "Überträgt die aktuelle Windstärke als separate semantische Zustandsgruppe an Ambience Forge.",
+  "pf2e-weather-forge.settings.ambienceWindStateGroupKey.name": "Ambience-Forge-Windgruppe",
+  "pf2e-weather-forge.settings.ambienceWindStateGroupKey.hint": "Semantischer API-Schlüssel der Ambience-Forge-Zustandsgruppe für Wind.",
+  "pf2e-weather-forge.settings.ambienceWindMapping.name": "Ambience-Forge-Windzuordnung",
+  "pf2e-weather-forge.settings.ambienceWindMapping.hint": "Zuordnung der Weather-Forge-Windstärken zu semantischen Ambience-Forge-Zustands-Keys."
 }

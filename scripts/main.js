@@ -18,11 +18,16 @@ import {
 
 import {
   DEFAULT_AMBIENCE_WEATHER_MAPPING,
+  DEFAULT_AMBIENCE_WIND_MAPPING,
   ambienceForgeRuntimeStatus,
   configuredAmbienceGroupKey,
   configuredAmbienceIntegrationEnabled,
   configuredAmbienceWeatherMapping,
+  configuredAmbienceWindIntegrationEnabled,
+  configuredAmbienceWindGroupKey,
+  configuredAmbienceWindMapping,
   resolveAmbienceWeatherKind,
+  resolveAmbienceWindKind,
   scheduleAmbienceSync,
   syncAmbienceFromCurrentWeather
 } from "./ambience-source.js";
@@ -300,6 +305,30 @@ function registerWeatherForgeSettings() {
       onChange: () => scheduleAmbienceSync()
     });
   }
+  if (!isSettingRegistered("ambienceWindIntegrationEnabled")) {
+    game.settings.register(MODULE_ID, "ambienceWindIntegrationEnabled", {
+      name: `${MODULE_ID}.settings.ambienceWindIntegrationEnabled.name`,
+      hint: `${MODULE_ID}.settings.ambienceWindIntegrationEnabled.hint`,
+      scope: "world", config: false, type: Boolean, default: false,
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
+  if (!isSettingRegistered("ambienceWindStateGroupKey")) {
+    game.settings.register(MODULE_ID, "ambienceWindStateGroupKey", {
+      name: `${MODULE_ID}.settings.ambienceWindStateGroupKey.name`,
+      hint: `${MODULE_ID}.settings.ambienceWindStateGroupKey.hint`,
+      scope: "world", config: false, type: String, default: "wind",
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
+  if (!isSettingRegistered("ambienceWindMapping")) {
+    game.settings.register(MODULE_ID, "ambienceWindMapping", {
+      name: `${MODULE_ID}.settings.ambienceWindMapping.name`,
+      hint: `${MODULE_ID}.settings.ambienceWindMapping.hint`,
+      scope: "world", config: false, type: Object, default: { ...DEFAULT_AMBIENCE_WIND_MAPPING },
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
 }
 
 let weatherForgeApp;
@@ -514,18 +543,28 @@ Hooks.once("ready", async () => {
       cityForgeClimate: true,
       activeSceneClimate: true,
       currentWeatherContext: true,
-      ambienceForgeContext: true
+      ambienceForgeContext: true,
+      ambienceForgeWindContext: true
     }),
     open: openWeatherForge,
     app: () => weatherForgeApp,
     getWeather: () => game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState(),
     getAmbienceForgeStatus: () => ambienceForgeRuntimeStatus(),
-    getAmbienceIntegration: () => ({
-      enabled: configuredAmbienceIntegrationEnabled(),
-      group: configuredAmbienceGroupKey(),
-      mapping: configuredAmbienceWeatherMapping(),
-      currentKind: resolveAmbienceWeatherKind(game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState())
-    }),
+    getAmbienceIntegration: () => {
+      const currentWeather = game.settings.get(MODULE_ID, "weatherState") ?? defaultWeatherState();
+      return {
+        enabled: configuredAmbienceIntegrationEnabled(),
+        group: configuredAmbienceGroupKey(),
+        mapping: configuredAmbienceWeatherMapping(),
+        currentKind: resolveAmbienceWeatherKind(currentWeather),
+        wind: {
+          enabled: configuredAmbienceWindIntegrationEnabled(),
+          group: configuredAmbienceWindGroupKey(),
+          mapping: configuredAmbienceWindMapping(),
+          currentKind: resolveAmbienceWindKind(currentWeather)
+        }
+      };
+    },
     syncAmbience: () => syncAmbienceFromCurrentWeather({ force: true }),
     getCalendarSourceStatus: () => calendarForgeRuntimeStatus(),
     getCalendar: async () => effectiveCalendarSourceMode() === "calendarForge"

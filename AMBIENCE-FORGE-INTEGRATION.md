@@ -60,6 +60,35 @@ Extreme storm, blizzard, and fog conditions take precedence over ordinary precip
 
 Heat waves and cold snaps currently do not get their own Ambience Forge weather state. Their ordinary precipitation/cloud condition still applies. A separate temperature/climate semantic group can be added later without changing this contract.
 
+## Independent wind context
+
+Weather Forge can additionally publish wind strength as a separate semantic group. This is optional and independent from the `weather` group.
+
+Default group key:
+
+```text
+wind
+```
+
+Default mapping:
+
+| Weather Forge wind strength | Default Ambience Forge state key |
+| --- | --- |
+| 0 | `calm` |
+| 1–2 | `breeze` |
+| 3–5 | `windy` |
+| 6–8 | `strong-wind` |
+| 9–12 | `gale` |
+
+A rainy, windy scene can therefore receive two simultaneous context values:
+
+```text
+weather = rain
+wind = strong-wind
+```
+
+This avoids forcing every windy condition into the broader `storm` weather state. The wind group key and all state mappings are user-configurable through the same discovery-backed settings UI.
+
 ## User-defined API keys
 
 The default Forge Suite state-group key is:
@@ -129,7 +158,7 @@ api.getAmbienceIntegration();
 await api.syncAmbience();
 ```
 
-`getAmbienceIntegration()` returns the configured group key, mapping, enable state, and currently resolved Weather Forge semantic weather kind.
+`getAmbienceIntegration()` returns the configured weather mapping and resolved weather kind plus the optional independent wind group, mapping, enable state, and resolved wind kind.
 
 ## No track-level coupling
 

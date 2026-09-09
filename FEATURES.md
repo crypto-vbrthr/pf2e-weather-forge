@@ -374,3 +374,11 @@ Feature availability may change between releases.
 - Discovery-assisted suggestions from Ambience Forge without forcing standard key names.
 - Weather Forge never manipulates Ambience Forge tracks directly.
 
+
+
+## Ambience Forge wind context
+
+- Optional independent `wind` context in addition to the existing `weather` context.
+- Default states: `calm`, `breeze`, `windy`, `strong-wind`, `gale`.
+- User-configurable group and state mappings discovered from Ambience Forge.
+- Weather and wind can combine simultaneously in the same ambience composition.

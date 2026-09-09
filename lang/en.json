@@ -347,5 +347,22 @@
   "pf2e-weather-forge.settings.ambienceAutoStartEnabled.name": "Automatically start ambience composition",
   "pf2e-weather-forge.settings.ambienceAutoStartEnabled.hint": "Optionally requests a specific Ambience Forge composition while the integration is active.",
   "pf2e-weather-forge.settings.ambienceCompositionId.name": "Ambience Forge composition",
-  "pf2e-weather-forge.settings.ambienceCompositionId.hint": "The Ambience Forge composition optionally requested automatically by Weather Forge."
+  "pf2e-weather-forge.settings.ambienceCompositionId.hint": "The Ambience Forge composition optionally requested automatically by Weather Forge.",
+  "pf2e-weather-forge.ambienceIntegration.windEnable": "Send wind strength separately to Ambience Forge",
+  "pf2e-weather-forge.ambienceIntegration.windHint": "Publishes an independent wind state group in addition to weather, allowing combinations such as rain plus strong wind.",
+  "pf2e-weather-forge.ambienceIntegration.windGroup": "Wind state group API key",
+  "pf2e-weather-forge.ambienceIntegration.windGroupHint": "Recommended Forge Suite key: wind. Discovered keys are suggested, and custom keys may be entered.",
+  "pf2e-weather-forge.ambienceIntegration.windMappingTitle": "Wind mapping",
+  "pf2e-weather-forge.ambienceIntegration.windMappingHint": "Map Weather Forge wind strength to Ambience Forge state keys. Categories follow Weather Forge’s existing wind descriptors.",
+  "pf2e-weather-forge.ambienceIntegration.wind.calm": "Calm (0)",
+  "pf2e-weather-forge.ambienceIntegration.wind.breeze": "Light breeze (1–2)",
+  "pf2e-weather-forge.ambienceIntegration.wind.windy": "Windy (3–5)",
+  "pf2e-weather-forge.ambienceIntegration.wind.strong-wind": "Strong wind (6–8)",
+  "pf2e-weather-forge.ambienceIntegration.wind.gale": "Gale / violent wind (9–12)",
+  "pf2e-weather-forge.settings.ambienceWindIntegrationEnabled.name": "Ambience Forge wind integration",
+  "pf2e-weather-forge.settings.ambienceWindIntegrationEnabled.hint": "Publishes the current wind strength as a separate semantic state group to Ambience Forge.",
+  "pf2e-weather-forge.settings.ambienceWindStateGroupKey.name": "Ambience Forge wind group",
+  "pf2e-weather-forge.settings.ambienceWindStateGroupKey.hint": "Semantic API key of the Ambience Forge state group used for wind.",
+  "pf2e-weather-forge.settings.ambienceWindMapping.name": "Ambience Forge wind mapping",
+  "pf2e-weather-forge.settings.ambienceWindMapping.hint": "Mapping from Weather Forge wind strengths to semantic Ambience Forge state keys."
 }

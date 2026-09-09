@@ -711,3 +711,13 @@
 .pf2e-weather-forge .ambience-controlled-composition {
   margin-top: 0.35rem;
 }
+
+.pf2e-weather-forge .ambience-context-subsection {
+  margin-top: 0.8rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--color-border-light-tertiary, rgba(255,255,255,0.18));
+}
+
+.pf2e-weather-forge .ambience-context-subsection > h3 {
+  margin: 0 0 0.45rem;
+}

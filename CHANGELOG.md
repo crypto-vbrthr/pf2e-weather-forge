@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0-alpha.4 – Independent Wind Context
+
+- Weather Forge can optionally publish wind strength as a second, independent Ambience Forge context group.
+- Default Forge Suite wind group key is `wind`, with `calm`, `breeze`, `windy`, `strong-wind`, and `gale` state keys.
+- Wind categories follow Weather Forge's existing 0–12 wind descriptors: 0, 1–2, 3–5, 6–8, and 9–12.
+- Users can override the wind group key and every wind-state mapping through the Settings tab.
+- Weather and wind are published separately, allowing combinations such as `weather = rain` plus `wind = strong-wind`.
+- Disabling wind publishing clears only the wind context owned by Weather Forge.
+- Public diagnostics now include the resolved wind context and advertise `ambienceForgeWindContext`.
+- Added regression coverage for wind classification, custom mapping, independent publication, cleanup, settings persistence, and UI controls.
+
 ## 1.2.0-alpha.3 – Settings Layout Polish
 
 - Reworked the Settings tab to a two-column desktop layout so the new Ambience Forge controls have enough horizontal space.

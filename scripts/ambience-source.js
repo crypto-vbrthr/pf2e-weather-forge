@@ -3,6 +3,7 @@ import { MODULE_ID } from "./weather-engine.js";
 export const AMBIENCE_FORGE_MODULE_ID = "ambience-forge";
 export const AMBIENCE_OWNER_ID = MODULE_ID;
 export const AMBIENCE_WEATHER_GROUP_DEFAULT = "weather";
+export const AMBIENCE_WIND_GROUP_DEFAULT = "wind";
 
 export const AMBIENCE_WEATHER_KINDS = Object.freeze([
   "clear",
@@ -24,6 +25,22 @@ export const DEFAULT_AMBIENCE_WEATHER_MAPPING = Object.freeze({
   storm: "storm",
   snow: "snow",
   blizzard: "heavy-snow"
+});
+
+export const AMBIENCE_WIND_KINDS = Object.freeze([
+  "calm",
+  "breeze",
+  "windy",
+  "strong-wind",
+  "gale"
+]);
+
+export const DEFAULT_AMBIENCE_WIND_MAPPING = Object.freeze({
+  calm: "calm",
+  breeze: "breeze",
+  windy: "windy",
+  "strong-wind": "strong-wind",
+  gale: "gale"
 });
 
 function settingValue(key, fallback) {
@@ -48,6 +65,23 @@ export function normalizeAmbienceWeatherMapping(mapping = null) {
     key,
     String(source[key] ?? DEFAULT_AMBIENCE_WEATHER_MAPPING[key] ?? "").trim()
   ]));
+}
+
+export function normalizeAmbienceWindMapping(mapping = null) {
+  const source = mapping && typeof mapping === "object" ? mapping : {};
+  return Object.fromEntries(AMBIENCE_WIND_KINDS.map((key) => [
+    key,
+    String(source[key] ?? DEFAULT_AMBIENCE_WIND_MAPPING[key] ?? "").trim()
+  ]));
+}
+
+export function resolveAmbienceWindKind(weather = {}) {
+  const value = Math.max(0, Math.min(12, Number(weather?.windStrength ?? 0) || 0));
+  if (value <= 0) return "calm";
+  if (value <= 2) return "breeze";
+  if (value <= 5) return "windy";
+  if (value <= 8) return "strong-wind";
+  return "gale";
 }
 
 export function resolveAmbienceWeatherKind(weather = {}) {
@@ -76,6 +110,18 @@ export function configuredAmbienceGroupKey() {
 
 export function configuredAmbienceWeatherMapping() {
   return normalizeAmbienceWeatherMapping(settingValue("ambienceWeatherMapping", DEFAULT_AMBIENCE_WEATHER_MAPPING));
+}
+
+export function configuredAmbienceWindIntegrationEnabled() {
+  return Boolean(settingValue("ambienceWindIntegrationEnabled", false));
+}
+
+export function configuredAmbienceWindGroupKey() {
+  return String(settingValue("ambienceWindStateGroupKey", AMBIENCE_WIND_GROUP_DEFAULT) || AMBIENCE_WIND_GROUP_DEFAULT).trim();
+}
+
+export function configuredAmbienceWindMapping() {
+  return normalizeAmbienceWindMapping(settingValue("ambienceWindMapping", DEFAULT_AMBIENCE_WIND_MAPPING));
 }
 
 export function configuredAmbienceAutoStartEnabled() {
@@ -217,33 +263,80 @@ export async function syncAmbienceOwnedComposition({ force = false } = {}) {
   }
 }
 
-let lastPublishedSignature = null;
-let lastPublishedGroupKey = null;
+const lastPublishedSignatures = new Map();
+const lastPublishedGroupKeys = new Map();
 
-export async function clearAmbienceWeatherContext({ groupKey = configuredAmbienceGroupKey(), force = false } = {}) {
+async function clearOwnedContext({ slot, groupKey, force = false } = {}) {
   if (!isPrimaryActiveGM()) return false;
   const api = getAmbienceForgeApi();
   const status = ambienceForgeRuntimeStatus();
-  if (!api || !status.compatible || !groupKey) return false;
+  const normalizedGroup = String(groupKey ?? "").trim();
+  if (!api || !status.compatible || !normalizedGroup) return false;
 
-  const signature = `clear:${groupKey}`;
-  if (!force && lastPublishedSignature === signature) return true;
+  const signature = `clear:${normalizedGroup}`;
+  if (!force && lastPublishedSignatures.get(slot) === signature) return true;
 
   try {
-    const result = await api.clearContextState({ group: groupKey, owner: AMBIENCE_OWNER_ID });
+    const result = await api.clearContextState({ group: normalizedGroup, owner: AMBIENCE_OWNER_ID });
     if (result === false) return false;
-    lastPublishedSignature = signature;
-    lastPublishedGroupKey = groupKey;
+    lastPublishedSignatures.set(slot, signature);
+    lastPublishedGroupKeys.set(slot, normalizedGroup);
     return true;
   } catch (error) {
-    console.warn(`${MODULE_ID} | Could not clear Ambience Forge weather context`, error);
+    console.warn(`${MODULE_ID} | Could not clear Ambience Forge ${slot} context`, error);
     return false;
   }
 }
 
+async function publishOwnedContext({ slot, groupKey, stateKey, force = false } = {}) {
+  const api = getAmbienceForgeApi();
+  const status = ambienceForgeRuntimeStatus();
+  const normalizedGroup = String(groupKey ?? "").trim();
+  const normalizedState = String(stateKey ?? "").trim();
+  if (!api || !status.compatible || !normalizedGroup || !normalizedState) return false;
+
+  const staleGroupKey = lastPublishedGroupKeys.get(slot);
+  if (staleGroupKey && staleGroupKey !== normalizedGroup) {
+    try {
+      const cleared = await api.clearContextState({ group: staleGroupKey, owner: AMBIENCE_OWNER_ID });
+      if (cleared === false) return false;
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Could not clear previous Ambience Forge ${slot} group`, error);
+      return false;
+    }
+  }
+
+  const signature = `${normalizedGroup}:${normalizedState}`;
+  if (!force && lastPublishedSignatures.get(slot) === signature) return true;
+
+  try {
+    const result = await api.setContextState({
+      group: normalizedGroup,
+      state: normalizedState,
+      owner: AMBIENCE_OWNER_ID
+    });
+    if (result === false) return false;
+    lastPublishedSignatures.set(slot, signature);
+    lastPublishedGroupKeys.set(slot, normalizedGroup);
+    return true;
+  } catch (error) {
+    console.warn(`${MODULE_ID} | Could not synchronize ${slot} with Ambience Forge`, error);
+    return false;
+  }
+}
+
+export async function clearAmbienceWeatherContext({ groupKey = configuredAmbienceGroupKey(), force = false } = {}) {
+  return clearOwnedContext({ slot: "weather", groupKey, force });
+}
+
+export async function clearAmbienceWindContext({ groupKey = configuredAmbienceWindGroupKey(), force = false } = {}) {
+  return clearOwnedContext({ slot: "wind", groupKey, force });
+}
+
 export async function syncAmbienceFromWeather(weather, {
   force = false,
-  previousGroupKey = null
+  previousGroupKey = null,
+  previousWindGroupKey = null
 } = {}) {
   if (!isPrimaryActiveGM()) return false;
 
@@ -251,50 +344,67 @@ export async function syncAmbienceFromWeather(weather, {
   const status = ambienceForgeRuntimeStatus();
   if (!api || !status.compatible) return false;
 
-  const groupKey = configuredAmbienceGroupKey();
-  const staleGroupKey = previousGroupKey || lastPublishedGroupKey;
-  if (staleGroupKey && staleGroupKey !== groupKey) {
-    try {
-      const cleared = await api.clearContextState({ group: staleGroupKey, owner: AMBIENCE_OWNER_ID });
-      if (cleared === false) return false;
-    } catch (error) {
-      console.warn(`${MODULE_ID} | Could not clear previous Ambience Forge weather group`, error);
-    }
+  const weatherGroupKey = configuredAmbienceGroupKey();
+  const previousWeatherGroup = previousGroupKey || lastPublishedGroupKeys.get("weather");
+  if (previousWeatherGroup && previousWeatherGroup !== weatherGroupKey) {
+    const cleared = await clearOwnedContext({ slot: "weather", groupKey: previousWeatherGroup, force: true });
+    if (!cleared) return false;
+  }
+
+  const windGroupKey = configuredAmbienceWindGroupKey();
+  const previousWindGroup = previousWindGroupKey || lastPublishedGroupKeys.get("wind");
+  if (previousWindGroup && previousWindGroup !== windGroupKey) {
+    const cleared = await clearOwnedContext({ slot: "wind", groupKey: previousWindGroup, force: true });
+    if (!cleared) return false;
   }
 
   if (!configuredAmbienceIntegrationEnabled()) {
-    await clearAmbienceWeatherContext({ groupKey, force: true });
+    await clearAmbienceWeatherContext({ groupKey: weatherGroupKey, force: true });
+    const publishedWindGroup = lastPublishedGroupKeys.get("wind");
+    if (publishedWindGroup) await clearAmbienceWindContext({ groupKey: publishedWindGroup, force: true });
     await syncAmbienceOwnedComposition({ force: true });
     return true;
   }
 
-  const kind = resolveAmbienceWeatherKind(weather);
-  const mapping = configuredAmbienceWeatherMapping();
-  const stateKey = String(mapping[kind] ?? "").trim();
-  if (!groupKey || !stateKey) {
-    await clearAmbienceWeatherContext({ groupKey, force: true });
+  const weatherKind = resolveAmbienceWeatherKind(weather);
+  const weatherMapping = configuredAmbienceWeatherMapping();
+  const weatherStateKey = String(weatherMapping[weatherKind] ?? "").trim();
+  if (!weatherGroupKey || !weatherStateKey) {
+    await clearAmbienceWeatherContext({ groupKey: weatherGroupKey, force: true });
     await syncAmbienceOwnedComposition({ force: true });
     return false;
   }
 
-  const signature = `${groupKey}:${stateKey}`;
-  if (!force && lastPublishedSignature === signature) return true;
+  const weatherResult = await publishOwnedContext({
+    slot: "weather",
+    groupKey: weatherGroupKey,
+    stateKey: weatherStateKey,
+    force
+  });
+  if (!weatherResult) return false;
 
-  try {
-    const result = await api.setContextState({
-      group: groupKey,
-      state: stateKey,
-      owner: AMBIENCE_OWNER_ID
-    });
-    if (result === false) return false;
-    lastPublishedSignature = signature;
-    lastPublishedGroupKey = groupKey;
-    const playbackResult = await syncAmbienceOwnedComposition({ force });
-    return playbackResult !== false;
-  } catch (error) {
-    console.warn(`${MODULE_ID} | Could not synchronize weather with Ambience Forge`, error);
-    return false;
+  if (configuredAmbienceWindIntegrationEnabled()) {
+    const windKind = resolveAmbienceWindKind(weather);
+    const windMapping = configuredAmbienceWindMapping();
+    const windStateKey = String(windMapping[windKind] ?? "").trim();
+    if (windGroupKey && windStateKey) {
+      const windResult = await publishOwnedContext({
+        slot: "wind",
+        groupKey: windGroupKey,
+        stateKey: windStateKey,
+        force
+      });
+      if (!windResult) return false;
+    } else if (windGroupKey) {
+      await clearAmbienceWindContext({ groupKey: windGroupKey, force: true });
+    }
+  } else {
+    const publishedWindGroup = lastPublishedGroupKeys.get("wind");
+    if (publishedWindGroup) await clearAmbienceWindContext({ groupKey: publishedWindGroup, force: true });
   }
+
+  const playbackResult = await syncAmbienceOwnedComposition({ force });
+  return playbackResult !== false;
 }
 
 export async function syncAmbienceFromCurrentWeather(options = {}) {
@@ -315,6 +425,6 @@ export function scheduleAmbienceSync({ delayMs = 0 } = {}) {
 }
 
 export function resetAmbienceSyncSignature() {
-  lastPublishedSignature = null;
-  lastPublishedGroupKey = null;
+  lastPublishedSignatures.clear();
+  lastPublishedGroupKeys.clear();
 }

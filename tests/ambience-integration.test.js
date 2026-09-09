@@ -2,9 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_AMBIENCE_WEATHER_MAPPING,
+  DEFAULT_AMBIENCE_WIND_MAPPING,
   aggregateAmbienceStateGroups,
   normalizeAmbienceWeatherMapping,
-  resolveAmbienceWeatherKind
+  normalizeAmbienceWindMapping,
+  resolveAmbienceWeatherKind,
+  resolveAmbienceWindKind
 } from "../scripts/ambience-source.js";
 
 test("weather resolves to semantic Ambience Forge states", () => {
@@ -37,6 +40,27 @@ test("mapping uses Forge Suite standard keys by default and preserves custom key
   assert.equal(custom.clear, "clear");
 });
 
+
+test("wind strength resolves to an independent semantic Ambience Forge state", () => {
+  assert.equal(resolveAmbienceWindKind({ windStrength: 0 }), "calm");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 1 }), "breeze");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 2 }), "breeze");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 3 }), "windy");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 5 }), "windy");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 6 }), "strong-wind");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 8 }), "strong-wind");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 9 }), "gale");
+  assert.equal(resolveAmbienceWindKind({ windStrength: 12 }), "gale");
+});
+
+test("wind mapping uses Forge Suite standard keys and supports custom keys", () => {
+  assert.deepEqual(normalizeAmbienceWindMapping(), DEFAULT_AMBIENCE_WIND_MAPPING);
+  const custom = normalizeAmbienceWindMapping({ gale: "violent-wind", breeze: "soft-wind" });
+  assert.equal(custom.gale, "violent-wind");
+  assert.equal(custom.breeze, "soft-wind");
+  assert.equal(custom.windy, "windy");
+});
+
 test("state discovery aggregates groups and states across compositions", () => {
   const groups = aggregateAmbienceStateGroups({
     compositions: [
@@ -58,12 +82,15 @@ import {
   syncAmbienceFromWeather
 } from "../scripts/ambience-source.js";
 
-function installAmbienceRuntime({ enabled = true, group = "weather", mapping = DEFAULT_AMBIENCE_WEATHER_MAPPING, autoStart = false, compositionId = "" } = {}) {
+function installAmbienceRuntime({ enabled = true, group = "weather", mapping = DEFAULT_AMBIENCE_WEATHER_MAPPING, windEnabled = false, windGroup = "wind", windMapping = DEFAULT_AMBIENCE_WIND_MAPPING, autoStart = false, compositionId = "" } = {}) {
   const calls = [];
   const settings = new Map([
     ["ambienceIntegrationEnabled", enabled],
     ["ambienceStateGroupKey", group],
     ["ambienceWeatherMapping", mapping],
+    ["ambienceWindIntegrationEnabled", windEnabled],
+    ["ambienceWindStateGroupKey", windGroup],
+    ["ambienceWindMapping", windMapping],
     ["ambienceAutoStartEnabled", autoStart],
     ["ambienceCompositionId", compositionId]
   ]);
@@ -137,5 +164,41 @@ test("disabling integration releases compositions owned by Weather Forge", async
   assert.deepEqual(calls, [
     ["clear", { group: "weather", owner: AMBIENCE_OWNER_ID }],
     ["release", "forest-id", { owner: AMBIENCE_OWNER_ID }]
+  ]);
+});
+
+
+test("Weather Forge can publish weather and wind as independent context groups", async () => {
+  resetAmbienceSyncSignature();
+  const { calls } = installAmbienceRuntime({ windEnabled: true });
+  const result = await syncAmbienceFromWeather({ precipitation: "rain", windStrength: 7 }, { force: true });
+  assert.equal(result, true);
+  assert.deepEqual(calls, [
+    ["set", { group: "weather", state: "rain", owner: AMBIENCE_OWNER_ID }],
+    ["set", { group: "wind", state: "strong-wind", owner: AMBIENCE_OWNER_ID }]
+  ]);
+});
+
+test("custom wind mappings are used independently from weather mappings", async () => {
+  resetAmbienceSyncSignature();
+  const { calls } = installAmbienceRuntime({
+    windEnabled: true,
+    windMapping: { ...DEFAULT_AMBIENCE_WIND_MAPPING, gale: "violent-wind" }
+  });
+  await syncAmbienceFromWeather({ precipitation: "none", cloudDensity: 10, windStrength: 11 }, { force: true });
+  assert.equal(calls[1][1].group, "wind");
+  assert.equal(calls[1][1].state, "violent-wind");
+});
+
+test("turning wind publishing off clears only the previously owned wind context", async () => {
+  resetAmbienceSyncSignature();
+  const runtime = installAmbienceRuntime({ windEnabled: true });
+  await syncAmbienceFromWeather({ precipitation: "rain", windStrength: 7 }, { force: true });
+  runtime.calls.length = 0;
+  runtime.settings.set("ambienceWindIntegrationEnabled", false);
+  await syncAmbienceFromWeather({ precipitation: "rain", windStrength: 7 }, { force: true });
+  assert.deepEqual(runtime.calls, [
+    ["set", { group: "weather", state: "rain", owner: AMBIENCE_OWNER_ID }],
+    ["clear", { group: "wind", owner: AMBIENCE_OWNER_ID }]
   ]);
 });

@@ -470,6 +470,34 @@
             </label>
           {{/each}}
         </div>
+
+        <div class="ambience-context-subsection">
+          <h3>{{labels.ambienceIntegration_windMappingTitle}}</h3>
+          <label class="checkbox-row">
+            <input type="checkbox" name="ambienceWindIntegrationEnabled" {{#if appSettings.ambience.windEnabled}}checked{{/if}}>
+            <span>{{labels.ambienceIntegration_windEnable}}</span>
+          </label>
+          <p class="weather-hint">{{labels.ambienceIntegration_windHint}}</p>
+
+          <div class="form-group">
+            <label>{{labels.ambienceIntegration_windGroup}}</label>
+            <input type="text" name="ambienceWindStateGroupKey" value="{{appSettings.ambience.windGroupKey}}" list="weather-forge-ambience-groups" autocomplete="off">
+            <small>{{labels.ambienceIntegration_windGroupHint}}</small>
+          </div>
+
+          <p class="weather-hint">{{labels.ambienceIntegration_windMappingHint}}</p>
+          <datalist id="weather-forge-ambience-wind-states">
+            {{#each appSettings.ambience.windStateSuggestions}}<option value="{{this}}"></option>{{/each}}
+          </datalist>
+          <div class="ambience-weather-mapping-grid ambience-wind-mapping-grid">
+            {{#each appSettings.ambience.windMappings}}
+              <label>
+                <span>{{label}}</span>
+                <input type="text" name="{{fieldName}}" value="{{value}}" list="weather-forge-ambience-wind-states" autocomplete="off">
+              </label>
+            {{/each}}
+          </div>
+        </div>
       </article>
 
       <article class="weather-panel settings-section">
