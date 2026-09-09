@@ -1,4 +1,4 @@
-# PF2e Weather Forge 1.2.0-rc.1
+# PF2e Weather Forge 1.2.0
 
 PF2e Weather Forge is a persistent, localized weather simulation for Foundry VTT and Pathfinder 2e.
 

@@ -1,13 +1,13 @@
-PF2e Weather Forge 1.2.0-rc.1
+PF2e Weather Forge 1.2.0
 
 Automated tests: 77/77 passed
 JavaScript syntax checks: passed
 Localization key parity (de/en): passed
 Coverage run: passed
 
-Release-candidate focus:
-- feature freeze for the 1.2.0 line
+Stable-release focus:
+- promoted the manually accepted 1.2.0-rc.1 build without functional changes
 - Ambience Forge weather + independent wind context
 - optional owner-based composition auto-start
 - discovery-backed, user-configurable semantic mappings
-- release metadata and documentation consistency
+- final release metadata and documentation consistency

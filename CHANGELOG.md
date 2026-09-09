@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 – Stable Release
+
+- Promoted the successfully tested `1.2.0-rc.1` build to the stable 1.2.0 release.
+- Adds optional Ambience Forge semantic weather and wind context integration, discovery-backed user mappings, and optional owner-safe composition auto-start.
+- Weather generation, forecast behavior, Calendar Forge integration, City Forge integration, and balance are unchanged from the accepted release candidate.
+- No functional changes from `1.2.0-rc.1`; this release finalizes version and release metadata.
+
 ## 1.2.0-rc.1 – Release Candidate
 
 - Release candidate for the 1.2.0 Ambience Forge integration line.
