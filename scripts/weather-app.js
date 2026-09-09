@@ -34,6 +34,9 @@ import {
   configuredAmbienceGroupKey,
   configuredAmbienceIntegrationEnabled,
   configuredAmbienceWeatherMapping,
+  configuredAmbienceAutoStartEnabled,
+  configuredAmbienceCompositionId,
+  getAmbienceOwnedCompositionIds,
   getAmbienceStateCatalog
 } from "./ambience-source.js";
 
@@ -89,6 +92,12 @@ const TEMPLATE_LABEL_KEYS = [
   ["ambienceIntegration_groupHint", "pf2e-weather-forge.ambienceIntegration.groupHint"],
   ["ambienceIntegration_mappingTitle", "pf2e-weather-forge.ambienceIntegration.mappingTitle"],
   ["ambienceIntegration_mappingHint", "pf2e-weather-forge.ambienceIntegration.mappingHint"],
+  ["ambienceIntegration_autoStart", "pf2e-weather-forge.ambienceIntegration.autoStart"],
+  ["ambienceIntegration_autoStartHint", "pf2e-weather-forge.ambienceIntegration.autoStartHint"],
+  ["ambienceIntegration_composition", "pf2e-weather-forge.ambienceIntegration.composition"],
+  ["ambienceIntegration_compositionNone", "pf2e-weather-forge.ambienceIntegration.compositionNone"],
+  ["ambienceIntegration_controlled", "pf2e-weather-forge.ambienceIntegration.controlled"],
+
   ["tabs_forecast", "pf2e-weather-forge.tabs.forecast"],
   ["tabs_generator", "pf2e-weather-forge.tabs.generator"],
   ["tabs_history", "pf2e-weather-forge.tabs.history"],
@@ -372,7 +381,10 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     const ambienceStatus = ambienceForgeRuntimeStatus();
     const ambienceGroupKey = configuredAmbienceGroupKey();
     const ambienceMapping = configuredAmbienceWeatherMapping();
-    const ambienceGroups = aggregateAmbienceStateGroups(getAmbienceStateCatalog());
+    const ambienceCatalog = getAmbienceStateCatalog();
+    const ambienceGroups = aggregateAmbienceStateGroups(ambienceCatalog);
+    const ambienceCompositionId = configuredAmbienceCompositionId();
+    const ambienceOwnedIds = new Set(getAmbienceOwnedCompositionIds());
     const selectedAmbienceGroup = ambienceGroups.find(group => group.key === ambienceGroupKey) ?? null;
     const stateSuggestionKeys = new Set(selectedAmbienceGroup?.states?.map(state => state.key) ?? []);
     for (const value of Object.values(ambienceMapping)) if (value) stateSuggestionKeys.add(value);
@@ -436,6 +448,20 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
         compatible: ambienceStatus.compatible,
         discovery: ambienceStatus.discovery,
         apiVersion: ambienceStatus.apiVersion,
+        playback: ambienceStatus.playback,
+        autoStartEnabled: configuredAmbienceAutoStartEnabled(),
+        compositionId: ambienceCompositionId,
+        compositions: [
+          { id: "", label: game.i18n.localize(`${MODULE_ID}.ambienceIntegration.compositionNone`), selected: !ambienceCompositionId },
+          ...(ambienceCatalog.compositions ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)).map((composition) => ({
+            id: composition.id,
+            label: composition.key ? `${composition.name} (${composition.key})` : composition.name,
+            selected: composition.id === ambienceCompositionId
+          }))
+        ],
+        controlledCompositions: (ambienceCatalog.compositions ?? [])
+          .filter((composition) => ambienceOwnedIds.has(composition.id))
+          .map((composition) => composition.name),
         statusLabel: game.i18n.localize(`${MODULE_ID}.ambienceIntegration.status.${
           !ambienceStatus.installed ? "notInstalled"
             : !ambienceStatus.active ? "inactive"
@@ -924,6 +950,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     }
 
     const ambienceEnabled = fd.get("ambienceIntegrationEnabled") === "on";
+    const ambienceAutoStart = fd.get("ambienceAutoStartEnabled") === "on";
+    const ambienceCompositionId = String(fd.get("ambienceCompositionId") ?? configuredAmbienceCompositionId() ?? "").trim();
     const ambienceGroupKey = String(fd.get("ambienceStateGroupKey") ?? configuredAmbienceGroupKey() ?? "weather").trim() || "weather";
     const ambienceMapping = { ...configuredAmbienceWeatherMapping() };
     for (const key of AMBIENCE_WEATHER_KINDS) {
@@ -932,6 +960,8 @@ export class PF2eWeatherForgeApp extends HandlebarsApplicationMixin(ApplicationV
     }
 
     await game.settings.set(MODULE_ID, "ambienceIntegrationEnabled", ambienceEnabled);
+    await game.settings.set(MODULE_ID, "ambienceAutoStartEnabled", ambienceAutoStart);
+    await game.settings.set(MODULE_ID, "ambienceCompositionId", ambienceCompositionId);
     await game.settings.set(MODULE_ID, "ambienceStateGroupKey", ambienceGroupKey);
     await game.settings.set(MODULE_ID, "ambienceWeatherMapping", ambienceMapping);
 

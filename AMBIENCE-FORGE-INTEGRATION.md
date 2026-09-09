@@ -149,3 +149,8 @@ Branch breaks    enabled
 ```
 
 The same `weather = storm` state may produce a completely different soundscape in a city, ship, cave entrance, or tavern.
+
+
+## Automatically starting a composition
+
+Weather Forge may optionally request one specific Ambience Forge composition while the integration is enabled. The composition is selected from Ambience Forge discovery data and is requested with `owner: "pf2e-weather-forge"`. Weather Forge releases only its own request when the option is disabled or another composition is selected. The semantic weather context is synchronized before the composition is requested so newly-started ambience begins in the current weather state.

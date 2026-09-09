@@ -78,6 +78,15 @@ export function configuredAmbienceWeatherMapping() {
   return normalizeAmbienceWeatherMapping(settingValue("ambienceWeatherMapping", DEFAULT_AMBIENCE_WEATHER_MAPPING));
 }
 
+export function configuredAmbienceAutoStartEnabled() {
+  return Boolean(settingValue("ambienceAutoStartEnabled", false));
+}
+
+export function configuredAmbienceCompositionId() {
+  return String(settingValue("ambienceCompositionId", "") ?? "").trim();
+}
+
+
 export function getAmbienceForgeApi() {
   const module = globalThis.game?.modules?.get?.(AMBIENCE_FORGE_MODULE_ID);
   if (!module?.active) return null;
@@ -99,12 +108,14 @@ export function ambienceForgeRuntimeStatus() {
   const capabilities = capabilityList(api);
   const contextCompatible = Boolean(api?.setContextState) && capabilities.includes("context-states-v1");
   const discoveryCompatible = Boolean(api?.getStateCatalog) && capabilities.includes("state-discovery-v1");
+  const playbackCompatible = Boolean(api?.requestAmbience) && Boolean(api?.releaseAmbience);
   return {
     installed: Boolean(module),
     active: Boolean(module?.active),
     apiVersion: api?.version ?? null,
     compatible: contextCompatible,
     discovery: discoveryCompatible,
+    playback: playbackCompatible,
     capabilities
   };
 }
@@ -160,6 +171,52 @@ export function aggregateAmbienceStateGroups(catalog = getAmbienceStateCatalog()
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
+export function getAmbienceOwnedCompositionIds() {
+  const api = getAmbienceForgeApi();
+  if (!api?.getState) return [];
+  try {
+    const state = api.getState() ?? {};
+    return Object.entries(state.owners ?? {})
+      .filter(([, owners]) => Array.isArray(owners) && owners.includes(AMBIENCE_OWNER_ID))
+      .map(([ambienceId]) => String(ambienceId));
+  } catch (error) {
+    console.warn(`${MODULE_ID} | Could not inspect Ambience Forge ownership`, error);
+    return [];
+  }
+}
+
+export async function syncAmbienceOwnedComposition({ force = false } = {}) {
+  if (!isPrimaryActiveGM()) return false;
+  const api = getAmbienceForgeApi();
+  const status = ambienceForgeRuntimeStatus();
+  if (!api || !status.playback) return false;
+
+  const desiredId = configuredAmbienceIntegrationEnabled() && configuredAmbienceAutoStartEnabled()
+    ? configuredAmbienceCompositionId()
+    : "";
+  const ownedIds = getAmbienceOwnedCompositionIds();
+
+  for (const ambienceId of ownedIds) {
+    if (ambienceId === desiredId) continue;
+    try {
+      await api.releaseAmbience(ambienceId, { owner: AMBIENCE_OWNER_ID });
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Could not release Ambience Forge composition ${ambienceId}`, error);
+    }
+  }
+
+  if (!desiredId) return true;
+  if (!force && ownedIds.includes(desiredId)) return true;
+
+  try {
+    await api.requestAmbience(desiredId, { owner: AMBIENCE_OWNER_ID });
+    return true;
+  } catch (error) {
+    console.warn(`${MODULE_ID} | Could not start Ambience Forge composition ${desiredId}`, error);
+    return false;
+  }
+}
+
 let lastPublishedSignature = null;
 let lastPublishedGroupKey = null;
 
@@ -207,6 +264,7 @@ export async function syncAmbienceFromWeather(weather, {
 
   if (!configuredAmbienceIntegrationEnabled()) {
     await clearAmbienceWeatherContext({ groupKey, force: true });
+    await syncAmbienceOwnedComposition({ force: true });
     return true;
   }
 
@@ -215,6 +273,7 @@ export async function syncAmbienceFromWeather(weather, {
   const stateKey = String(mapping[kind] ?? "").trim();
   if (!groupKey || !stateKey) {
     await clearAmbienceWeatherContext({ groupKey, force: true });
+    await syncAmbienceOwnedComposition({ force: true });
     return false;
   }
 
@@ -230,7 +289,8 @@ export async function syncAmbienceFromWeather(weather, {
     if (result === false) return false;
     lastPublishedSignature = signature;
     lastPublishedGroupKey = groupKey;
-    return true;
+    const playbackResult = await syncAmbienceOwnedComposition({ force });
+    return playbackResult !== false;
   } catch (error) {
     console.warn(`${MODULE_ID} | Could not synchronize weather with Ambience Forge`, error);
     return false;

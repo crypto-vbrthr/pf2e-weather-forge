@@ -1,24 +1,16 @@
-PF2e Weather Forge 1.2.0-alpha.1
+PF2e Weather Forge 1.2.0-alpha.3
 
-Automated test suite: PASS
-68 / 68 tests passed
-0 failed
+Automated test suite: 72/72 passed.
 
-Additional validation: PASS
-- JavaScript syntax checks passed
-- module.json and package.json version parity passed
-- German/English localization key parity passed
-- relative ES module import validation passed
-- Ambience Forge integration documentation and test files present
+Coverage includes:
+- Ambience Forge semantic weather mapping
+- persistent context publishing and ownership conflict handling
+- optional owner-based Ambience composition auto-start and release
+- Ambience discovery/settings UI
+- Calendar Forge and City Forge integrations
+- runtime hardening and startup behavior
+- localization parity and Foundry V14 compatibility
+- release contract and template action coverage
 
-Ambience Forge integration coverage includes:
-- semantic weather resolution
-- extreme-weather precedence
-- default and custom API-key mappings
-- state catalog aggregation
-- persistent context publication
-- Weather Forge owner id
-- integration disable cleanup
-- ownership conflict handling
-- settings UI contract
-- startup/ambienceForgeReady synchronization
+Additional checks:
+- JavaScript syntax check passed for all runtime scripts.

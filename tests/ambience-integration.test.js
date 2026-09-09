@@ -58,18 +58,23 @@ import {
   syncAmbienceFromWeather
 } from "../scripts/ambience-source.js";
 
-function installAmbienceRuntime({ enabled = true, group = "weather", mapping = DEFAULT_AMBIENCE_WEATHER_MAPPING } = {}) {
+function installAmbienceRuntime({ enabled = true, group = "weather", mapping = DEFAULT_AMBIENCE_WEATHER_MAPPING, autoStart = false, compositionId = "" } = {}) {
   const calls = [];
   const settings = new Map([
     ["ambienceIntegrationEnabled", enabled],
     ["ambienceStateGroupKey", group],
-    ["ambienceWeatherMapping", mapping]
+    ["ambienceWeatherMapping", mapping],
+    ["ambienceAutoStartEnabled", autoStart],
+    ["ambienceCompositionId", compositionId]
   ]);
   const api = {
     version: "1.3",
     capabilities: ["context-states-v1", "state-discovery-v1"],
     async setContextState(payload) { calls.push(["set", payload]); return []; },
     async clearContextState(payload) { calls.push(["clear", payload]); return []; },
+    async requestAmbience(ambienceId, payload) { calls.push(["request", ambienceId, payload]); return 1; },
+    async releaseAmbience(ambienceId, payload) { calls.push(["release", ambienceId, payload]); return 0; },
+    getState() { return { owners: {} }; },
     getStateCatalog() { return { compositions: [] }; }
   };
   globalThis.game = {
@@ -109,4 +114,28 @@ test("ownership conflicts reported by Ambience Forge are not treated as successf
   api.setContextState = async () => false;
   const result = await syncAmbienceFromWeather({ precipitation: "rain" }, { force: true });
   assert.equal(result, false);
+});
+
+
+test("Weather Forge can request a selected Ambience Forge composition after publishing weather context", async () => {
+  resetAmbienceSyncSignature();
+  const { calls } = installAmbienceRuntime({ autoStart: true, compositionId: "forest-id" });
+  const result = await syncAmbienceFromWeather({ precipitation: "rain" }, { force: true });
+  assert.equal(result, true);
+  assert.deepEqual(calls, [
+    ["set", { group: "weather", state: "rain", owner: AMBIENCE_OWNER_ID }],
+    ["request", "forest-id", { owner: AMBIENCE_OWNER_ID }]
+  ]);
+});
+
+test("disabling integration releases compositions owned by Weather Forge", async () => {
+  resetAmbienceSyncSignature();
+  const { calls, api } = installAmbienceRuntime({ enabled: false, autoStart: true, compositionId: "forest-id" });
+  api.getState = () => ({ owners: { "forest-id": [AMBIENCE_OWNER_ID] } });
+  const result = await syncAmbienceFromWeather({ precipitation: "rain" }, { force: true });
+  assert.equal(result, true);
+  assert.deepEqual(calls, [
+    ["clear", { group: "weather", owner: AMBIENCE_OWNER_ID }],
+    ["release", "forest-id", { owner: AMBIENCE_OWNER_ID }]
+  ]);
 });

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0-alpha.3 – Settings Layout Polish
+
+- Reworked the Settings tab to a two-column desktop layout so the new Ambience Forge controls have enough horizontal space.
+- Removed the inherited 420 px minimum height from Settings cards, reducing unnecessary vertical growth.
+- The application content now stays within the viewport and scrolls when necessary instead of growing past the screen edge.
+- Ambience mapping controls can shrink safely without clipping long state keys such as `heavy-rain`.
+- No weather-generation or Ambience Forge integration behavior changed.
+
+## 1.2.0-alpha.2 – Ambience Forge Composition Ownership
+
+- Weather Forge can optionally request a specific Ambience Forge composition while the integration is active.
+- Composition selection is populated from Ambience Forge discovery data.
+- Start/stop ownership uses the Weather Forge module ID so disabling or changing the selection releases only Weather Forge's request.
+- The current weather context is published before an automatically requested composition starts, allowing it to begin directly in the correct weather state.
+- Settings show which compositions are currently requested by Weather Forge.
+
 ## 1.2.0-alpha.1 – Optional Ambience Forge Weather Context
 
 - Added optional integration with Ambience Forge 0.2.x semantic context states.

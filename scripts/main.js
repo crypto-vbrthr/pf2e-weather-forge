@@ -268,6 +268,22 @@ function registerWeatherForgeSettings() {
       onChange: () => scheduleAmbienceSync()
     });
   }
+  if (!isSettingRegistered("ambienceAutoStartEnabled")) {
+    game.settings.register(MODULE_ID, "ambienceAutoStartEnabled", {
+      name: `${MODULE_ID}.settings.ambienceAutoStartEnabled.name`,
+      hint: `${MODULE_ID}.settings.ambienceAutoStartEnabled.hint`,
+      scope: "world", config: false, type: Boolean, default: false,
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
+  if (!isSettingRegistered("ambienceCompositionId")) {
+    game.settings.register(MODULE_ID, "ambienceCompositionId", {
+      name: `${MODULE_ID}.settings.ambienceCompositionId.name`,
+      hint: `${MODULE_ID}.settings.ambienceCompositionId.hint`,
+      scope: "world", config: false, type: String, default: "",
+      onChange: () => scheduleAmbienceSync()
+    });
+  }
   if (!isSettingRegistered("ambienceStateGroupKey")) {
     game.settings.register(MODULE_ID, "ambienceStateGroupKey", {
       name: `${MODULE_ID}.settings.ambienceStateGroupKey.name`,

@@ -338,5 +338,14 @@
   "pf2e-weather-forge.settings.ambienceStateGroupKey.name": "Ambience-Forge-Wettergruppe",
   "pf2e-weather-forge.settings.ambienceStateGroupKey.hint": "Semantischer API-Schlüssel der Ambience-Forge-Zustandsgruppe für Wetter.",
   "pf2e-weather-forge.settings.ambienceWeatherMapping.name": "Ambience-Forge-Wetterzuordnung",
-  "pf2e-weather-forge.settings.ambienceWeatherMapping.hint": "Zuordnung der Weather-Forge-Wetterlagen zu semantischen Ambience-Forge-Zustands-Keys."
+  "pf2e-weather-forge.settings.ambienceWeatherMapping.hint": "Zuordnung der Weather-Forge-Wetterlagen zu semantischen Ambience-Forge-Zustands-Keys.",
+  "pf2e-weather-forge.ambienceIntegration.autoStart": "Ausgewählte Ambience-Komposition automatisch starten",
+  "pf2e-weather-forge.ambienceIntegration.autoStartHint": "Weather Forge fordert diese Komposition über die Owner-API an. Beim Deaktivieren oder Wechseln wird nur die eigene Anforderung wieder freigegeben.",
+  "pf2e-weather-forge.ambienceIntegration.composition": "Ambience-Komposition",
+  "pf2e-weather-forge.ambienceIntegration.compositionNone": "Keine Komposition automatisch starten",
+  "pf2e-weather-forge.ambienceIntegration.controlled": "Derzeit durch Weather Forge angefordert:",
+  "pf2e-weather-forge.settings.ambienceAutoStartEnabled.name": "Ambience-Komposition automatisch starten",
+  "pf2e-weather-forge.settings.ambienceAutoStartEnabled.hint": "Fordert optional eine bestimmte Ambience-Forge-Komposition an, solange die Integration aktiv ist.",
+  "pf2e-weather-forge.settings.ambienceCompositionId.name": "Ambience-Forge-Komposition",
+  "pf2e-weather-forge.settings.ambienceCompositionId.hint": "Die von Weather Forge optional automatisch angeforderte Ambience-Komposition."
 }

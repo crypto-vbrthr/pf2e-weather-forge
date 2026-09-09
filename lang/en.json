@@ -338,5 +338,14 @@
   "pf2e-weather-forge.settings.ambienceStateGroupKey.name": "Ambience Forge weather group",
   "pf2e-weather-forge.settings.ambienceStateGroupKey.hint": "Semantic API key of the Ambience Forge state group used for weather.",
   "pf2e-weather-forge.settings.ambienceWeatherMapping.name": "Ambience Forge weather mapping",
-  "pf2e-weather-forge.settings.ambienceWeatherMapping.hint": "Mapping from Weather Forge conditions to semantic Ambience Forge state keys."
+  "pf2e-weather-forge.settings.ambienceWeatherMapping.hint": "Mapping from Weather Forge conditions to semantic Ambience Forge state keys.",
+  "pf2e-weather-forge.ambienceIntegration.autoStart": "Automatically start the selected ambience composition",
+  "pf2e-weather-forge.ambienceIntegration.autoStartHint": "Weather Forge requests this composition through the owner API. Disabling or changing it releases only Weather Forge's own request.",
+  "pf2e-weather-forge.ambienceIntegration.composition": "Ambience composition",
+  "pf2e-weather-forge.ambienceIntegration.compositionNone": "Do not automatically start a composition",
+  "pf2e-weather-forge.ambienceIntegration.controlled": "Currently requested by Weather Forge:",
+  "pf2e-weather-forge.settings.ambienceAutoStartEnabled.name": "Automatically start ambience composition",
+  "pf2e-weather-forge.settings.ambienceAutoStartEnabled.hint": "Optionally requests a specific Ambience Forge composition while the integration is active.",
+  "pf2e-weather-forge.settings.ambienceCompositionId.name": "Ambience Forge composition",
+  "pf2e-weather-forge.settings.ambienceCompositionId.hint": "The Ambience Forge composition optionally requested automatically by Weather Forge."
 }
